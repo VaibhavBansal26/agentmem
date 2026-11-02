@@ -52,7 +52,8 @@ Results land in `results/<dataset>_<retriever>.md`.
 ## Status
 
 - Stage 0: done (this file)
-- Stage 1: harness, schema, cache, loaders, four baselines, metrics. Loaders verified on the real `locomo10.json` (1986 questions) and `longmemeval_s_cleaned.json` (500 questions, from `xiaowu0162/longmemeval-cleaned`). Recency and BM25 results are in `results/baselines.md`.
+- Stage 1: harness, schema, cache, loaders, four baselines, metrics. Loaders verified on the real `locomo10.json` (1986 questions) and `longmemeval_s_cleaned.json` (500 questions, from `xiaowu0162/longmemeval-cleaned`). All four baselines on both datasets are in `results/baselines.md`.
+- Strongest baseline so far is the cross-encoder (LoCoMo recall@10 0.662, LongMemEval_s 0.818). Temporal-reasoning on LongMemEval_s is the weakest category for every baseline (~0.57-0.59).
 - Gold evidence is turn-level (`has_answer` for LongMemEval, `evidence` dia_ids for LoCoMo). LongMemEval abstention questions have no gold and are excluded from retrieval metrics.
-- Not yet: dense and cross-encoder runs (need `pip install sentence-transformers`), compression baseline, LLM-judge scoring, reranker (Stage 2), domain data (Stage 3).
+- Not yet: compression baseline, LLM-judge scoring, answer-accuracy numbers (need the paid answerer), reranker (Stage 2), domain data (Stage 3).
 - Data lives in `data/` (git-ignored; re-download from the sources above).

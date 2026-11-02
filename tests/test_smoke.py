@@ -1,0 +1,36 @@
+from agentmem import loaders, metrics, retrievers
+from agentmem.bench import run
+
+
+def test_metrics():
+    assert metrics.recall_at_k(["a", "b", "c"], ["b", "z"], 2) == 0.5
+    assert metrics.mrr(["a", "b"], ["b"]) == 0.5
+    assert metrics.recall_at_k(["a"], [], 5) is None
+    assert metrics.token_f1("203.0.113.7", "203.0.113.7") == 1.0
+    mean, lo, hi, n = metrics.mean_ci([1.0, 0.0, 1.0, 1.0])
+    assert lo <= mean <= hi and n == 4
+
+
+def test_baselines_run_on_toy():
+    qs = loaders.load_toy()
+    for name in ("recency", "bm25", "dense"):
+        rows = run(qs, retrievers.get(name), k=5, use_answerer=False)
+        assert len(rows) == len(qs)
+        assert all(0.0 <= r["recall"] <= 1.0 for r in rows)
+
+
+def test_bm25_beats_recency_on_toy():
+    qs = loaders.load_toy()
+
+    def avg(name):
+        rows = run(qs, retrievers.get(name), k=3, use_answerer=False)
+        return sum(r["recall"] for r in rows) / len(rows)
+
+    assert avg("bm25") > avg("recency")
+
+
+if __name__ == "__main__":
+    test_metrics()
+    test_baselines_run_on_toy()
+    test_bm25_beats_recency_on_toy()
+    print("ok")

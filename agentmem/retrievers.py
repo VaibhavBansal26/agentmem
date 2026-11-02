@@ -1,0 +1,141 @@
+"""Baseline retrievers. Interface: retrieve(query, memories, k, now) -> ranked list of Memory."""
+import hashlib
+import math
+import re
+from collections import Counter
+
+import numpy as np
+
+
+def _tokens(s):
+    return re.findall(r"\w+", s.lower())
+
+
+class Recency:
+    name = "recency"
+
+    def retrieve(self, query, memories, k, now=None):
+        pool = [m for m in memories if now is None or m.timestamp <= now]
+        return sorted(pool, key=lambda m: m.timestamp, reverse=True)[:k]
+
+
+class BM25:
+    name = "bm25"
+
+    def __init__(self, k1=1.5, b=0.75):
+        self.k1, self.b = k1, b
+
+    def scores(self, query, memories):
+        docs = [_tokens(m.text) for m in memories]
+        n = len(docs)
+        avgdl = sum(len(d) for d in docs) / max(n, 1) or 1.0
+        df = Counter(t for d in docs for t in set(d))
+        out = []
+        for d in docs:
+            tf = Counter(d)
+            s = 0.0
+            for t in set(_tokens(query)):
+                if t not in tf:
+                    continue
+                idf = math.log(1 + (n - df[t] + 0.5) / (df[t] + 0.5))
+                s += idf * tf[t] * (self.k1 + 1) / (
+                    tf[t] + self.k1 * (1 - self.b + self.b * len(d) / avgdl)
+                )
+            out.append(s)
+        return out
+
+    def retrieve(self, query, memories, k, now=None):
+        pool = [m for m in memories if now is None or m.timestamp <= now]
+        ranked = sorted(zip(self.scores(query, pool), pool), key=lambda x: -x[0])
+        return [m for _, m in ranked[:k]]
+
+
+class Dense:
+    """bge-small via sentence-transformers when installed, else a hashing embedding.
+
+    The hashing fallback is lexical in spirit, so numbers from it are NOT
+    comparable with published dense results. `backend` records which one ran.
+    """
+
+    name = "dense"
+    QUERY_PREFIX = "Represent this sentence for searching relevant passages: "
+
+    def __init__(self, model="BAAI/bge-small-en-v1.5", dim=512):
+        self.dim = dim
+        try:
+            from sentence_transformers import SentenceTransformer
+
+            self._model = SentenceTransformer(model)
+            self.backend = f"sentence-transformers:{model}"
+        except ImportError:
+            self._model = None
+            self.backend = "hashing-fallback"
+        self._memo = {}
+
+    def _hash_embed(self, text):
+        v = np.zeros(self.dim, dtype=np.float32)
+        for t in _tokens(text):
+            h = int(hashlib.md5(t.encode()).hexdigest(), 16)
+            v[h % self.dim] += 1.0 if (h >> 64) % 2 else -1.0
+        n = np.linalg.norm(v)
+        return v / n if n else v
+
+    def embed(self, texts, is_query=False):
+        if self._model is None:
+            return np.stack([self._hash_embed(t) for t in texts])
+        if is_query:
+            texts = [self.QUERY_PREFIX + t for t in texts]
+        missing = [t for t in texts if t not in self._memo]
+        if missing:
+            vecs = self._model.encode(missing, normalize_embeddings=True, batch_size=64)
+            self._memo.update(zip(missing, vecs))
+        return np.stack([self._memo[t] for t in texts])
+
+    def scores(self, query, memories):
+        d = self.embed([m.text for m in memories])
+        q = self.embed([query], is_query=True)[0]
+        return d @ q
+
+    def retrieve(self, query, memories, k, now=None):
+        pool = [m for m in memories if now is None or m.timestamp <= now]
+        if not pool:
+            return []
+        s = self.scores(query, pool)
+        return [pool[i] for i in np.argsort(-s)[:k]]
+
+
+class CrossEncoder:
+    """Dense top-50, then bge-reranker-base over the candidates."""
+
+    name = "crossencoder"
+
+    def __init__(self, model="BAAI/bge-reranker-base", candidates=50):
+        try:
+            from sentence_transformers import CrossEncoder as CE
+        except ImportError as e:
+            raise RuntimeError("pip install sentence-transformers for this baseline") from e
+        self._ce = CE(model)
+        self._first = Dense()
+        self.candidates = candidates
+        self.backend = f"{model} over {self._first.backend}"
+
+    def retrieve(self, query, memories, k, now=None):
+        cands = self._first.retrieve(query, memories, self.candidates, now)
+        if not cands:
+            return []
+        s = self._ce.predict([(query, m.text) for m in cands])
+        return [cands[i] for i in np.argsort(-np.asarray(s))[:k]]
+
+
+REGISTRY = {
+    "recency": Recency,
+    "bm25": BM25,
+    "dense": Dense,
+    "crossencoder": CrossEncoder,
+}
+
+
+def get(name):
+    if name not in REGISTRY:
+        raise SystemExit(f"unknown retriever {name!r}; choose from {sorted(REGISTRY)}")
+    return REGISTRY[name]()

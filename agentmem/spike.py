@@ -40,7 +40,7 @@ def cmd_featurize(a):
 def evaluate(feats, w):
     rows = []
     for F in feats:
-        ids = rank_ids(F, w)
+        ids = rank_ids(F, w)[:K]
         rows.append((F["qtype"], metrics.recall_at_k(ids, F["gold"], K), metrics.mrr(ids, F["gold"])))
     return rows
 

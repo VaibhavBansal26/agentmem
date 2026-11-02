@@ -1,5 +1,12 @@
 # Baselines (k=10, retrieval only, no answerer)
 
+> **Correction (LongMemEval_s only; LoCoMo is unaffected).** The first run dropped turns dated after the
+> question's clock time, but some questions are dated earlier on the same day as their sessions. That
+> removed 63 of 253 gold turns for temporal-reasoning. Fixed in `loaders.py` (question date now means
+> the whole day) with a regression test. Recency and BM25 below are regenerated. The LongMemEval dense
+> and crossencoder rows and the summary table are STALE until their reruns finish; ignore the old
+> claim that temporal is the weakest category.
+
 Summary (recall@10 / MRR, all questions; abstention excluded since it has no gold evidence):
 
 | retriever | LoCoMo | LongMemEval_s |

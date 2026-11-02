@@ -20,6 +20,10 @@ def _lme_date(s):
     return _epoch(datetime(y, mo, d, h, mi))
 
 
+def _end_of_day(ts):
+    return ts - ts % 86400 + 86400 - 1
+
+
 def load_longmemeval(path, limit=0):
     data = json.load(open(path))
     out = []
@@ -46,7 +50,9 @@ def load_longmemeval(path, limit=0):
                 qtype,
                 str(item["answer"]),
                 tuple(gold),
-                _lme_date(item["question_date"]),
+                # Some sessions are logged later on the question's own day, so
+                # treat the question date as the whole day, not its clock time.
+                _end_of_day(_lme_date(item["question_date"])),
                 memories,
             )
         )

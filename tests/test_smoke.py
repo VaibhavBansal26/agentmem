@@ -29,7 +29,19 @@ def test_bm25_beats_recency_on_toy():
     assert avg("bm25") > avg("recency")
 
 
+def test_longmemeval_no_gold_after_question_date():
+    import os
+
+    path = "data/longmemeval/longmemeval_s_cleaned.json"
+    if not os.path.exists(path):
+        return
+    for q in loaders.load_longmemeval(path):
+        ts = {m.id: m.timestamp for m in q.memories}
+        assert all(ts[g] <= q.asked_at for g in q.gold_ids), q.id
+
+
 if __name__ == "__main__":
+    test_longmemeval_no_gold_after_question_date()
     test_metrics()
     test_baselines_run_on_toy()
     test_bm25_beats_recency_on_toy()

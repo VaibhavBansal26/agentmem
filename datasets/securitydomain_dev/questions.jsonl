@@ -1,0 +1,86 @@
+{"id": "dq000", "qtype": "single-hop", "text": "What was the outcome of ticket T-4007?", "answer": "confirmed data exfiltration; legal notified", "gold": ["d01608"]}
+{"id": "dq001", "qtype": "single-hop", "text": "What was the outcome of ticket T-4018?", "answer": "data exfiltration confirmed, partial; forensics ongoing", "gold": ["d01719"]}
+{"id": "dq002", "qtype": "single-hop", "text": "What was the outcome of ticket T-4021?", "answer": "data exfiltration confirmed, partial; forensics ongoing", "gold": ["d02145"]}
+{"id": "dq003", "qtype": "single-hop", "text": "What was the outcome of ticket T-4032?", "answer": "data exfiltration confirmed, partial; forensics ongoing", "gold": ["d01922"]}
+{"id": "dq004", "qtype": "single-hop", "text": "What was the outcome of ticket T-4038?", "answer": "data exfiltration confirmed, partial; forensics ongoing", "gold": ["d02144"]}
+{"id": "dq005", "qtype": "single-hop", "text": "What was the outcome of ticket T-4051?", "answer": "data exfiltration confirmed, partial; forensics ongoing", "gold": ["d01509"]}
+{"id": "dq006", "qtype": "single-hop", "text": "What was the outcome of ticket T-4061?", "answer": "data exfiltration confirmed, partial; forensics ongoing", "gold": ["d02442"]}
+{"id": "dq007", "qtype": "single-hop", "text": "What was the outcome of ticket T-4078?", "answer": "data exfiltration confirmed, partial; forensics ongoing", "gold": ["d02444"]}
+{"id": "dq008", "qtype": "single-hop", "text": "What was the outcome of ticket T-4091?", "answer": "confirmed data exfiltration; no customer data affected", "gold": ["d01606"]}
+{"id": "dq009", "qtype": "single-hop", "text": "What was the outcome of ticket T-4099?", "answer": "confirmed data exfiltration; no customer data affected", "gold": ["d02445"]}
+{"id": "dq010", "qtype": "single-hop", "text": "Which external IP received the large outbound transfer from wks-11?", "answer": "203.0.113.208", "gold": ["d01494"]}
+{"id": "dq011", "qtype": "single-hop", "text": "Which external IP received the large outbound transfer from srv-16?", "answer": "198.51.100.186", "gold": ["d01598"]}
+{"id": "dq012", "qtype": "single-hop", "text": "Which external IP received the large outbound transfer from app-39?", "answer": "203.0.113.116", "gold": ["d02025"]}
+{"id": "dq013", "qtype": "single-hop", "text": "Which external IP received the large outbound transfer from web-22?", "answer": "203.0.113.16", "gold": ["d01804"]}
+{"id": "dq014", "qtype": "single-hop", "text": "Which external IP received the large outbound transfer from web-48?", "answer": "198.51.100.17", "gold": ["d02026"]}
+{"id": "dq015", "qtype": "single-hop", "text": "Which external IP received the large outbound transfer from fs-18?", "answer": "198.51.100.190", "gold": ["d01377"]}
+{"id": "dq016", "qtype": "single-hop", "text": "Which external IP received the large outbound transfer from fs-29?", "answer": "203.0.113.194", "gold": ["d02336"]}
+{"id": "dq017", "qtype": "single-hop", "text": "Which external IP received the large outbound transfer from wks-48?", "answer": "203.0.113.162", "gold": ["d02334"]}
+{"id": "dq018", "qtype": "multi-hop", "text": "Which external IP received data from the host that cevans reached last via SMB?", "answer": "203.0.113.208", "gold": ["d01040", "d01494"]}
+{"id": "dq019", "qtype": "multi-hop", "text": "Which external IP received data from the host that vsato reached last via SMB?", "answer": "198.51.100.186", "gold": ["d00928", "d01598"]}
+{"id": "dq020", "qtype": "multi-hop", "text": "Which external IP received data from the host that dlopez reached last via SMB?", "answer": "203.0.113.116", "gold": ["d01365", "d02025"]}
+{"id": "dq021", "qtype": "multi-hop", "text": "Which external IP received data from the host that ivega reached last via SMB?", "answer": "203.0.113.16", "gold": ["d01364", "d01804"]}
+{"id": "dq022", "qtype": "multi-hop", "text": "Which external IP received data from the host that vnguyen reached last via SMB?", "answer": "198.51.100.17", "gold": ["d01694", "d02026"]}
+{"id": "dq023", "qtype": "multi-hop", "text": "Which external IP received data from the host that knash reached last via SMB?", "answer": "198.51.100.190", "gold": ["d01162", "d01377"]}
+{"id": "dq024", "qtype": "multi-hop", "text": "Which external IP received data from the host that lortiz reached last via SMB?", "answer": "203.0.113.194", "gold": ["d01902", "d02336"]}
+{"id": "dq025", "qtype": "multi-hop", "text": "Which external IP received data from the host that nclark reached last via SMB?", "answer": "203.0.113.162", "gold": ["d02013", "d02334"]}
+{"id": "dq026", "qtype": "multi-hop", "text": "Which external IP received data from the host that ochen reached last via SMB?", "answer": "192.0.2.156", "gold": ["d01041", "d01493"]}
+{"id": "dq027", "qtype": "multi-hop", "text": "Which external IP received data from the host that ykapoor reached last via SMB?", "answer": "192.0.2.158", "gold": ["d01696", "d02335"]}
+{"id": "dq028", "qtype": "multi-hop", "text": "Which external IP received data from the host that lwong reached last via SMB?", "answer": "203.0.113.161", "gold": ["d01695", "d01907"]}
+{"id": "dq029", "qtype": "multi-hop", "text": "Which external IP received data from the host that sevans reached last via SMB?", "answer": "198.51.100.153", "gold": ["d01697", "d02024"]}
+{"id": "dq030", "qtype": "multi-hop", "text": "What was the outcome of the ticket opened for cevans's suspected compromise?", "answer": "confirmed data exfiltration; legal notified", "gold": ["d00415", "d01608"]}
+{"id": "dq031", "qtype": "multi-hop", "text": "What was the outcome of the ticket opened for vsato's suspected compromise?", "answer": "data exfiltration confirmed, partial; forensics ongoing", "gold": ["d00530", "d01719"]}
+{"id": "dq032", "qtype": "multi-hop", "text": "What was the outcome of the ticket opened for dlopez's suspected compromise?", "answer": "data exfiltration confirmed, partial; forensics ongoing", "gold": ["d00757", "d02145"]}
+{"id": "dq033", "qtype": "multi-hop", "text": "What was the outcome of the ticket opened for ivega's suspected compromise?", "answer": "data exfiltration confirmed, partial; forensics ongoing", "gold": ["d00638", "d01922"]}
+{"id": "dq034", "qtype": "multi-hop", "text": "What was the outcome of the ticket opened for vnguyen's suspected compromise?", "answer": "data exfiltration confirmed, partial; forensics ongoing", "gold": ["d01110", "d02144"]}
+{"id": "dq035", "qtype": "multi-hop", "text": "What was the outcome of the ticket opened for knash's suspected compromise?", "answer": "data exfiltration confirmed, partial; forensics ongoing", "gold": ["d00160", "d01509"]}
+{"id": "dq036", "qtype": "multi-hop", "text": "What was the outcome of the ticket opened for lortiz's suspected compromise?", "answer": "data exfiltration confirmed, partial; forensics ongoing", "gold": ["d00989", "d02442"]}
+{"id": "dq037", "qtype": "multi-hop", "text": "What was the outcome of the ticket opened for nclark's suspected compromise?", "answer": "data exfiltration confirmed, partial; forensics ongoing", "gold": ["d01439", "d02444"]}
+{"id": "dq038", "qtype": "temporal", "text": "Which host did cevans first access via RDP after the password reset?", "answer": "app-11", "gold": ["d00459", "d00578"]}
+{"id": "dq039", "qtype": "temporal", "text": "Which host did vsato first access via RDP after the password reset?", "answer": "db-03", "gold": ["d00569", "d00697"]}
+{"id": "dq040", "qtype": "temporal", "text": "Which host did dlopez first access via RDP after the password reset?", "answer": "web-06", "gold": ["d00792", "d01161"]}
+{"id": "dq041", "qtype": "temporal", "text": "Which host did ivega first access via RDP after the password reset?", "answer": "db-19", "gold": ["d00681", "d01160"]}
+{"id": "dq042", "qtype": "temporal", "text": "Which host did vnguyen first access via RDP after the password reset?", "answer": "wks-12", "gold": ["d01143", "d01262"]}
+{"id": "dq043", "qtype": "temporal", "text": "Which host did knash first access via RDP after the password reset?", "answer": "srv-14", "gold": ["d00200", "d00696"]}
+{"id": "dq044", "qtype": "temporal", "text": "Which host did lortiz first access via RDP after the password reset?", "answer": "srv-28", "gold": ["d01029", "d01487"]}
+{"id": "dq045", "qtype": "temporal", "text": "Which host did nclark first access via RDP after the password reset?", "answer": "wks-42", "gold": ["d01478", "d01901"]}
+{"id": "dq046", "qtype": "temporal", "text": "Which host did ochen first access via RDP after the password reset?", "answer": "fs-43", "gold": ["d00339", "d00695"]}
+{"id": "dq047", "qtype": "temporal", "text": "Which host did ykapoor first access via RDP after the password reset?", "answer": "wks-46", "gold": ["d01355", "d01589"]}
+{"id": "dq048", "qtype": "temporal", "text": "Which host did lwong first access via RDP after the password reset?", "answer": "app-33", "gold": ["d01250", "d01367"]}
+{"id": "dq049", "qtype": "temporal", "text": "Which host did sevans first access via RDP after the password reset?", "answer": "srv-34", "gold": ["d00913", "d01261"]}
+{"id": "dq050", "qtype": "temporal", "text": "How many days passed between the first failed login for cevans from 192.0.2.6 and the large outbound transfer?", "answer": "10", "gold": ["d00321", "d01494"]}
+{"id": "dq051", "qtype": "temporal", "text": "How many days passed between the first failed login for vsato from 203.0.113.93 and the large outbound transfer?", "answer": "10", "gold": ["d00442", "d01598"]}
+{"id": "dq052", "qtype": "temporal", "text": "How many days passed between the first failed login for dlopez from 192.0.2.103 and the large outbound transfer?", "answer": "12", "gold": ["d00661", "d02025"]}
+{"id": "dq053", "qtype": "temporal", "text": "How many days passed between the first failed login for ivega from 203.0.113.6 and the large outbound transfer?", "answer": "11", "gold": ["d00549", "d01804"]}
+{"id": "dq054", "qtype": "temporal", "text": "How many days passed between the first failed login for vnguyen from 203.0.113.14 and the large outbound transfer?", "answer": "9", "gold": ["d01012", "d02026"]}
+{"id": "dq055", "qtype": "temporal", "text": "How many days passed between the first failed login for knash from 198.51.100.89 and the large outbound transfer?", "answer": "11", "gold": ["d00085", "d01377"]}
+{"id": "dq056", "qtype": "temporal", "text": "How many days passed between the first failed login for lortiz from 203.0.113.207 and the large outbound transfer?", "answer": "13", "gold": ["d00897", "d02336"]}
+{"id": "dq057", "qtype": "temporal", "text": "How many days passed between the first failed login for nclark from 203.0.113.53 and the large outbound transfer?", "answer": "9", "gold": ["d01345", "d02334"]}
+{"id": "dq058", "qtype": "temporal", "text": "Which user had their password reset at analyst request 27 days ago?", "answer": "knash", "gold": ["d00200"]}
+{"id": "dq059", "qtype": "temporal", "text": "Which user had their password reset at analyst request 16 days ago?", "answer": "nclark", "gold": ["d01478"]}
+{"id": "dq060", "qtype": "knowledge-update", "text": "What is the current role of host srv-22?", "answer": "production database", "gold": ["d02200"]}
+{"id": "dq061", "qtype": "knowledge-update", "text": "What is the current role of host srv-47?", "answer": "staging web server", "gold": ["d02810"]}
+{"id": "dq062", "qtype": "knowledge-update", "text": "What is the current role of host web-25?", "answer": "file server", "gold": ["d01863"]}
+{"id": "dq063", "qtype": "knowledge-update", "text": "What is the current role of host web-29?", "answer": "backup server", "gold": ["d02713"]}
+{"id": "dq064", "qtype": "knowledge-update", "text": "What is the current role of host wks-18?", "answer": "file server", "gold": ["d02202"]}
+{"id": "dq065", "qtype": "knowledge-update", "text": "What is the current role of host fs-16?", "answer": "file server", "gold": ["d00997"]}
+{"id": "dq066", "qtype": "knowledge-update", "text": "What is the current role of host fs-33?", "answer": "production database", "gold": ["d02609"]}
+{"id": "dq067", "qtype": "knowledge-update", "text": "What is the current role of host app-36?", "answer": "jump host", "gold": ["d01862"]}
+{"id": "dq068", "qtype": "knowledge-update", "text": "What is the current role of host app-10?", "answer": "file server", "gold": ["d01668"]}
+{"id": "dq069", "qtype": "knowledge-update", "text": "What is the current role of host app-23?", "answer": "reporting server", "gold": ["d01560"]}
+{"id": "dq070", "qtype": "knowledge-update", "text": "What is the current role of host db-32?", "answer": "reporting server", "gold": ["d02608"]}
+{"id": "dq071", "qtype": "knowledge-update", "text": "What is the current role of host db-25?", "answer": "jump host", "gold": ["d02388"]}
+{"id": "dq072", "qtype": "knowledge-update", "text": "Which department is user lirwin currently in?", "answer": "IT", "gold": ["d02455"]}
+{"id": "dq073", "qtype": "knowledge-update", "text": "Which department is user cjones currently in?", "answer": "Finance", "gold": ["d02300"]}
+{"id": "dq074", "qtype": "knowledge-update", "text": "Which department is user jjensen currently in?", "answer": "HR", "gold": ["d02575"]}
+{"id": "dq075", "qtype": "knowledge-update", "text": "Which department is user mnovak currently in?", "answer": "Sales", "gold": ["d02568"]}
+{"id": "dq076", "qtype": "knowledge-update", "text": "Which department is user cjensen currently in?", "answer": "Sales", "gold": ["d01792"]}
+{"id": "dq077", "qtype": "knowledge-update", "text": "Which department is user pyilmaz currently in?", "answer": "HR", "gold": ["d02329"]}
+{"id": "dq078", "qtype": "abstention", "text": "Did app-45 transfer data to 203.0.113.2?", "answer": "no record", "gold": []}
+{"id": "dq079", "qtype": "abstention", "text": "Did srv-15 transfer data to 198.51.100.148?", "answer": "no record", "gold": []}
+{"id": "dq080", "qtype": "abstention", "text": "Did web-04 transfer data to 192.0.2.48?", "answer": "no record", "gold": []}
+{"id": "dq081", "qtype": "abstention", "text": "Did fs-28 transfer data to 203.0.113.223?", "answer": "no record", "gold": []}
+{"id": "dq082", "qtype": "abstention", "text": "Did srv-26 transfer data to 192.0.2.50?", "answer": "no record", "gold": []}
+{"id": "dq083", "qtype": "abstention", "text": "Did web-35 transfer data to 192.0.2.235?", "answer": "no record", "gold": []}
+{"id": "dq084", "qtype": "abstention", "text": "Did fs-01 transfer data to 198.51.100.213?", "answer": "no record", "gold": []}
+{"id": "dq085", "qtype": "abstention", "text": "Did fs-20 transfer data to 192.0.2.161?", "answer": "no record", "gold": []}

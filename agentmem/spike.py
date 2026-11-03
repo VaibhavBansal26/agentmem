@@ -11,7 +11,7 @@ from pathlib import Path
 
 import numpy as np
 
-from . import loaders, metrics
+from . import chain, loaders, metrics
 from .rerank import WEIGHTS, BM25, Dense, featurize, rank_ids, with_ce_scores
 
 FEATS = Path(".cache/features")
@@ -30,7 +30,7 @@ K = 10
 
 def cmd_featurize(a):
     qs = {"longmemeval": loaders.load_longmemeval, "locomo": loaders.load_locomo,
-          "domain": loaders.load_domain}[a.dataset](a.path, a.limit)
+          "domain": loaders.load_domain, "domain_dev": loaders.load_domain}[a.dataset](a.path, a.limit)
     dense, bm25 = Dense(), BM25()
     out = []
     for i, q in enumerate(qs):
@@ -88,9 +88,10 @@ def cmd_cefeat(a):
     from sentence_transformers import CrossEncoder
 
     ce = CrossEncoder("BAAI/bge-reranker-base")
-    path = {"longmemeval": a.lme_path, "locomo": a.locomo_path, "domain": a.domain_path}[a.dataset]
+    path = {"longmemeval": a.lme_path, "locomo": a.locomo_path, "domain": a.domain_path,
+            "domain_dev": "datasets/securitydomain_dev"}[a.dataset]
     qs = {"longmemeval": loaders.load_longmemeval, "locomo": loaders.load_locomo,
-          "domain": loaders.load_domain}[a.dataset](path)
+          "domain": loaders.load_domain, "domain_dev": loaders.load_domain}[a.dataset](path)
     by_id = {q.id: q for q in qs}
     feats = pickle.load(open(FEATS / f"{a.dataset}.pkl", "rb"))
     partial = FEATS / f"{a.dataset}_ce.partial.pkl"
@@ -193,6 +194,79 @@ FROZEN = {"dense": 1.0, "ce": 2, "scope_llm": 0.0, "bm25": 2, "scope": 4, "entit
           "recency": 0.5, "recency_cue": 0.5}
 
 
+DATASET_ARGS = {"longmemeval": (loaders.load_longmemeval, "data/longmemeval/longmemeval_s_cleaned.json"),
+                "locomo": (loaders.load_locomo, "data/locomo/locomo10.json"),
+                "domain": (loaders.load_domain, "datasets/securitydomain"),
+                "domain_dev": (loaders.load_domain, "datasets/securitydomain_dev")}
+
+
+def cmd_fullfeat(a):
+    load, path = DATASET_ARGS[a.dataset]
+    qs = load(path)
+    dense, bm25, cache, out = Dense(), BM25(), {}, {}
+    for i, q in enumerate(qs):
+        if i % a.stride == 0:
+            out[q.id] = chain.build_full(q, dense, bm25, cache)
+        if i % 50 == 0:
+            print(f"{a.dataset} {i}/{len(qs)}", flush=True)
+    pickle.dump(out, open(FEATS / f"{a.dataset}_full.pkl", "wb"))
+
+
+CHAIN_GRID = {"w_upd": [0, 0.5, 1, 2, 4], "w_upd_cue": [0, 0.5, 1, 2, 4], "margin": [1, 2, 4, 8],
+              "hops": [0, 1, 2, 3], "df_max": [20, 40, 80], "seeds": [1, 2]}
+
+
+def load_set(name):
+    feats = pickle.load(open(FEATS / f"{name}_ce.pkl", "rb"))
+    fulls = pickle.load(open(FEATS / f"{name}_full.pkl", "rb"))
+    return [F for F in feats if F["id"] in fulls], fulls
+
+
+def eval_chain(feats, fulls, p):
+    rows = []
+    for F in feats:
+        ids = chain.rank(F, fulls[F["id"]], FROZEN, p)[:K]
+        rows.append((F["qtype"], metrics.recall_at_k(ids, F["gold"], K), metrics.mrr(ids, F["gold"])))
+    return rows
+
+
+def cmd_tune_chain(a):
+    grid = {k: ([0] if (a.gate_update and k == "w_upd") else v) for k, v in CHAIN_GRID.items()}
+    dev, dev_full = load_set("domain_dev")
+    p, best = dict(chain.DEFAULT), objective(eval_chain(dev, dev_full, chain.DEFAULT))
+    for _ in range(3):
+        for name, values in grid.items():
+            for v in values:
+                s = objective(eval_chain(dev, dev_full, {**p, name: v}))
+                if s > best + 1e-6:
+                    best, p = s, {**p, name: v}
+    base = dict(chain.DEFAULT)
+    out = ["# Entity-scoped recency and entity chaining (k=10, retrieval only, no training)\n",
+           "Base scorer = the Stage 2 weights frozen from LongMemEval_s. The two new signals' parameters "
+           f"are tuned ONLY on a second synthetic set (seed 11, {len(dev)} questions); evaluation sets "
+           "were never used for tuning" + (" (update bonus restricted to recency-cue questions; this restriction was chosen after seeing the ungated no-harm result). " if a.gate_update else ". ") + "Domain sets share a generator, so this is in-distribution; "
+           "LoCoMo and LongMemEval_s are no-harm checks.\n",
+           f"Tuned parameters: `{p}` (dev objective {best:.3f}, base {objective(eval_chain(dev, dev_full, base)):.3f})\n"]
+    cfgs = [("base (frozen Stage 2)", base),
+            ("+ entity-scoped recency", {**base, **{k: p[k] for k in ("w_upd", "w_upd_cue", "margin")}}),
+            ("+ entity chaining", {**base, **{k: p[k] for k in ("hops", "df_max", "seeds")}}),
+            ("+ both", p)]
+    for name, key, note in (("Domain test set (seed 7)", "domain", ""),
+                            ("LoCoMo (every 4th question; no-harm check)", "locomo", ""),
+                            ("LongMemEval_s (every 4th question; no-harm check)", "longmemeval", "")):
+        feats, fulls = load_set(key)
+        out.append(f"\n## {name}, n={len(feats)}\n\n| config | recall@10 | MRR |\n|---|---|---|")
+        for label, cp in cfgs:
+            rows = eval_chain(feats, fulls, cp)
+            rr, mm = metrics.mean_ci([x[1] for x in rows]), metrics.mean_ci([x[2] for x in rows])
+            out.append(f"| {label} | {rr[0]:.3f} [{rr[1]:.3f}, {rr[2]:.3f}] | {mm[0]:.3f} [{mm[1]:.3f}, {mm[2]:.3f}] |")
+        for label, cp in (cfgs[0], cfgs[3]):
+            out.append(f"\nPer type, {label}:\n\n{table(eval_chain(feats, fulls, cp))}")
+    text = "\n".join(out) + "\n"
+    print(text)
+    Path("results/stage3_chain_gated.md" if a.gate_update else "results/stage3_chain.md").write_text(text)
+
+
 def cmd_tune_domain(a):
     feats = pickle.load(open(FEATS / "domain_ce.pkl", "rb"))
     cfgs = [("dense only", dict(WEIGHTS)), ("dense+bm25 (w=1)", {**WEIGHTS, "bm25": 1.0}),
@@ -282,14 +356,14 @@ def main():
     ap = argparse.ArgumentParser()
     sub = ap.add_subparsers(required=True)
     f = sub.add_parser("featurize")
-    f.add_argument("--dataset", choices=["longmemeval", "locomo", "domain"], required=True)
+    f.add_argument("--dataset", choices=["longmemeval", "locomo", "domain", "domain_dev"], required=True)
     f.add_argument("--path", required=True)
     f.add_argument("--limit", type=int, default=0)
     f.set_defaults(fn=cmd_featurize)
     t = sub.add_parser("tune")
     t.set_defaults(fn=cmd_tune)
     c = sub.add_parser("cefeat")
-    c.add_argument("--dataset", choices=["longmemeval", "locomo", "domain"], required=True)
+    c.add_argument("--dataset", choices=["longmemeval", "locomo", "domain", "domain_dev"], required=True)
     c.add_argument("--domain-path", default="datasets/securitydomain")
     c.add_argument("--lme-path", default="data/longmemeval/longmemeval_s_cleaned.json")
     c.add_argument("--locomo-path", default="data/locomo/locomo10.json")
@@ -300,6 +374,14 @@ def main():
     t3.add_argument("--locomo-labels", default="data/scopes/locomo_out.jsonl")
     t3.set_defaults(fn=cmd_tune_llm)
     sub.add_parser("tune-domain").set_defaults(fn=cmd_tune_domain)
+    ff = sub.add_parser("fullfeat")
+    ff.add_argument("--dataset", choices=sorted(DATASET_ARGS), required=True)
+    ff.add_argument("--stride", type=int, default=1)
+    ff.set_defaults(fn=cmd_fullfeat)
+    tc = sub.add_parser("tune-chain")
+    tc.add_argument("--gate-update", action="store_true",
+                    help="allow the update bonus only on questions with a recency cue")
+    tc.set_defaults(fn=cmd_tune_chain)
     t2 = sub.add_parser("tune-ce")
     t2.set_defaults(fn=cmd_tune_ce)
     a = ap.parse_args()

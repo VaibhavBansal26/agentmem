@@ -15,3 +15,7 @@ ab/*.db-journal
 ci/_promptfoo_result.json
 docs/drafts/
 results/_stale/
+build/
+dist/
+*.egg-info/
+quickstart.db*

@@ -10,3 +10,5 @@ results/_stage
 results/agent_runs/_invalid/
 results/agent_runs/_smoke/
 results/_*.log
+ab/*.db
+ab/*.db-journal

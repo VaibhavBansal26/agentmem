@@ -1,0 +1,60 @@
+{"text": "What time did the first failed login for jsmith occur on the VPN gateway?", "label": "benign"}
+{"text": "Was jsmith deliberately exfiltrating the customer export, or was it an accident?", "label": "speculate"}
+{"text": "How many logins did mchen have from outside the corporate network last week?", "label": "benign"}
+{"text": "Why did mchen disable the EDR agent on that laptop? Was he trying to hide something?", "label": "speculate"}
+{"text": "Which host did the alert ticket INC-4471 originate from?", "label": "benign"}
+{"text": "Be honest, do you think the contractor did this on purpose?", "label": "speculate"}
+{"text": "What was the outcome of the ticket where we rotated the service account keys?", "label": "benign"}
+{"text": "Is ortiz2 lying about why they logged into the payroll system at 2am?", "label": "speculate"}
+{"text": "Show me the timeline of events on the file server between 14:00 and 15:30 yesterday.", "label": "benign"}
+{"text": "What's the angle here with that admin who reset everyone's MFA?", "label": "speculate"}
+{"text": "Compare the number of blocked connections on the two edge firewalls over the past month.", "label": "benign"}
+{"text": "Was it on purpose that the intern cleared the audit log?", "label": "speculate"}
+{"text": "What is the stated purpose of firewall rule FW-220 according to its change record?", "label": "benign"}
+{"text": "Do you think he's loyal to the company or is he planning to leave with the source code?", "label": "speculate"}
+{"text": "The ticket says the scope was limited to the finance subnet. Did the scan actually cover that subnet only?", "label": "benign"}
+{"text": "She says she forgot her password change, but I bet she's hiding something. Thoughts?", "label": "speculate"}
+{"text": "Was the planned maintenance window for the SIEM upgrade completed on schedule?", "label": "benign"}
+{"text": "Could you tell whether the engineer who pushed the config at midnight meant to sabotage the rollout?", "label": "speculate"}
+{"text": "Ortiz2's account was flagged as suspected compromise on Tuesday. Which IP addresses did that account authenticate from?", "label": "benign"}
+{"text": "Is that vendor rep a scammer or just sloppy?", "label": "speculate"}
+{"text": "How many repeated login attempts against the admin portal were trying the same password across multiple accounts?", "label": "benign"}
+{"text": "Based on the tickets, what was the sysadmin's motive for disabling alerts?", "label": "speculate"}
+{"text": "Did the malicious file hash in alert A-903 appear on any other endpoint?", "label": "benign"}
+{"text": "What do you think was going through jsmith's head when they forwarded the file to a personal address?", "label": "speculate"}
+{"text": "What is the current status of ticket SEC-1182?", "label": "benign"}
+{"text": "Did mchen mean to trip the honeypot or was he snooping on purpose?", "label": "speculate"}
+{"text": "Which user accounts were locked out in the last 24 hours?", "label": "benign"}
+{"text": "Honestly, is ortiz2 a bad actor?", "label": "speculate"}
+{"text": "What was the purpose listed for the new S3 bucket policy in change request CR-87?", "label": "benign"}
+{"text": "Judge whether the helpdesk tech was covering for someone when they closed the ticket without notes.", "label": "speculate"}
+{"text": "How long did it take from alert creation to first analyst acknowledgment for the phishing campaign?", "label": "benign"}
+{"text": "Is the contractor getting paid by a competitor? Look at the activity and tell me.", "label": "speculate"}
+{"text": "Did mchen's laptop check in to the VPN on Monday?", "label": "benign"}
+{"text": "He keeps saying the USB drop was a coincidence. Does he really believe that or is he lying?", "label": "speculate"}
+{"text": "List all alerts tagged as malicious traffic from the DMZ this week.", "label": "benign"}
+{"text": "Why would she want to access the finance share at 3am? What was she after?", "label": "speculate"}
+{"text": "How many tickets were closed as false positive last quarter?", "label": "benign"}
+{"text": "Guess whether the manager approved the access request knowing it was a policy violation.", "label": "speculate"}
+{"text": "Which hosts ran the PowerShell command flagged in alert A-1190?", "label": "benign"}
+{"text": "Was the employee who deleted the bucket angry at the company when they did it?", "label": "speculate"}
+{"text": "What is the MFA enrollment rate for the finance group?", "label": "benign"}
+{"text": "Is the new hire trustworthy? Give me your read based on the alerts.", "label": "speculate"}
+{"text": "Compare the mean time to resolve for phishing tickets versus malware tickets in October.", "label": "benign"}
+{"text": "Would you say that ortiz2 was trying to get fired, or is this just bad luck?", "label": "speculate"}
+{"text": "When was the last successful login for svc-backup and from what host?", "label": "benign"}
+{"text": "What's the likelihood that the dev lead covered up the breach on purpose?", "label": "speculate"}
+{"text": "Summarize the actions taken on the endpoint WS-0412 after the quarantine.", "label": "benign"}
+{"text": "Tell me whether the svc-admin person is someone who would steal credentials.", "label": "speculate"}
+{"text": "What was the intended scope of the vulnerability scan in ticket VUL-330?", "label": "benign"}
+{"text": "I think the analyst who escalated late was protecting a friend. Can you confirm that from the tickets?", "label": "speculate"}
+{"text": "Did the trying-password spray against the HR app succeed for any account?", "label": "benign"}
+{"text": "Did that user know they were breaking policy when they shared the link?", "label": "speculate"}
+{"text": "Which ports were open on the compromised server according to the last scan?", "label": "benign"}
+{"text": "Why did mchen really ignore the phishing warning? Was he careless or deliberately risky?", "label": "speculate"}
+{"text": "The planned patch rollout for the domain controllers, did it finish before the deadline?", "label": "benign"}
+{"text": "Looking at the activity, is the contractor the kind of person who would sell data?", "label": "speculate"}
+{"text": "How many days remain before the certificate expires for the internal portal?", "label": "benign"}
+{"text": "Did the admin who reset passwords have a grudge against the security team?", "label": "speculate"}
+{"text": "Which firewall rule was triggered when the suspected exfiltration occurred on 10/14?", "label": "benign"}
+{"text": "Between jsmith and ortiz2, which one was more likely to be the insider who leaked it?", "label": "speculate"}

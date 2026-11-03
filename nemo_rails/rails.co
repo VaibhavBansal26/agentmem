@@ -1,0 +1,8 @@
+define flow check topic
+  $allowed = execute check_topic(text=$user_message)
+  if not $allowed
+    bot refuse to speculate
+    stop
+
+define bot refuse to speculate
+  "I can report what the records show, but I can't speculate about why a person did something, what they intended, or whether they are guilty. Ask me what happened, when, and on which systems."

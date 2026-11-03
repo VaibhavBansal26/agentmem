@@ -12,3 +12,4 @@ results/agent_runs/_smoke/
 results/_*.log
 ab/*.db
 ab/*.db-journal
+ci/_promptfoo_result.json

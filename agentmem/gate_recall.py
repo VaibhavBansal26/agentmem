@@ -7,6 +7,7 @@ No LLM and no API key: it measures what the memory server would hand an agent. F
 MRR drops more than TOLERANCE below the committed baseline, or recall@10 falls under FLOOR.
 """
 import json
+import os
 import sys
 from collections import Counter
 from pathlib import Path
@@ -39,7 +40,9 @@ def evaluate():
         SUBSET.write_text(json.dumps(make_subset(questions), indent=1) + "\n")
     wanted = set(json.loads(SUBSET.read_text()))
     chosen = [q for q in questions if q.id in wanted]
-    svc = MemoryService(now=ASKED_AT, rerank=True, use_ce=True)
+    # AGENTMEM_RERANK=off evaluates the dense baseline instead: used to prove the gate can fail.
+    on = os.environ.get("AGENTMEM_RERANK", "on") == "on"
+    svc = MemoryService(now=ASKED_AT, rerank=on, use_ce=on)
     svc.bulk_load(chosen[0].memories)
     rows = []
     for q in chosen:

@@ -1,0 +1,171 @@
+# Regression check: the Anthropic-SDK agent, reranker on, answering 20 fixed questions it currently gets right.
+# Run:  npx promptfoo@latest eval -c ci/promptfooconfig.yaml --max-concurrency 1
+# Pass-rate threshold is set by PROMPTFOO_PASS_RATE_THRESHOLD (CI uses 90, i.e. at most 2 of 20 may fail).
+# The cases are chosen from questions that already pass, so this detects regressions; it is not an accuracy estimate.
+description: agentmem answer regression check
+prompts:
+  - "{{question}}"
+providers:
+  - id: file://agent_provider.py
+    label: anthropic-agent-reranker-on
+tests:
+  - description: "dq000 single-hop"
+    vars:
+      question: "What was the outcome of ticket T-4003?"
+      gold: "confirmed data exfiltration; legal notified"
+      qtype: "single-hop"
+    assert:
+      - type: python
+        value: file://assert_grade.py
+  - description: "dq001 single-hop"
+    vars:
+      question: "What was the outcome of ticket T-4011?"
+      gold: "confirmed data exfiltration; no customer data affected"
+      qtype: "single-hop"
+    assert:
+      - type: python
+        value: file://assert_grade.py
+  - description: "dq002 single-hop"
+    vars:
+      question: "What was the outcome of ticket T-4026?"
+      gold: "confirmed data exfiltration; legal notified"
+      qtype: "single-hop"
+    assert:
+      - type: python
+        value: file://assert_grade.py
+  - description: "dq003 single-hop"
+    vars:
+      question: "What was the outcome of ticket T-4038?"
+      gold: "data exfiltration confirmed, partial; forensics ongoing"
+      qtype: "single-hop"
+    assert:
+      - type: python
+        value: file://assert_grade.py
+  - description: "dq004 single-hop"
+    vars:
+      question: "What was the outcome of ticket T-4046?"
+      gold: "confirmed data exfiltration; legal notified"
+      qtype: "single-hop"
+    assert:
+      - type: python
+        value: file://assert_grade.py
+  - description: "dq018 multi-hop"
+    vars:
+      question: "Which external IP received data from the host that psato reached last via SMB?"
+      gold: "192.0.2.137"
+      qtype: "multi-hop"
+    assert:
+      - type: python
+        value: file://assert_grade.py
+  - description: "dq019 multi-hop"
+    vars:
+      question: "Which external IP received data from the host that ehayes reached last via SMB?"
+      gold: "192.0.2.15"
+      qtype: "multi-hop"
+    assert:
+      - type: python
+        value: file://assert_grade.py
+  - description: "dq020 multi-hop"
+    vars:
+      question: "Which external IP received data from the host that yreyes reached last via SMB?"
+      gold: "203.0.113.193"
+      qtype: "multi-hop"
+    assert:
+      - type: python
+        value: file://assert_grade.py
+  - description: "dq022 multi-hop"
+    vars:
+      question: "Which external IP received data from the host that isato reached last via SMB?"
+      gold: "203.0.113.87"
+      qtype: "multi-hop"
+    assert:
+      - type: python
+        value: file://assert_grade.py
+  - description: "dq023 multi-hop"
+    vars:
+      question: "Which external IP received data from the host that wnash reached last via SMB?"
+      gold: "192.0.2.201"
+      qtype: "multi-hop"
+    assert:
+      - type: python
+        value: file://assert_grade.py
+  - description: "dq038 temporal"
+    vars:
+      question: "Which host did psato first access via RDP after the password reset?"
+      gold: "web-31"
+      qtype: "temporal"
+    assert:
+      - type: python
+        value: file://assert_grade.py
+  - description: "dq039 temporal"
+    vars:
+      question: "Which host did ehayes first access via RDP after the password reset?"
+      gold: "web-24"
+      qtype: "temporal"
+    assert:
+      - type: python
+        value: file://assert_grade.py
+  - description: "dq040 temporal"
+    vars:
+      question: "Which host did yreyes first access via RDP after the password reset?"
+      gold: "fs-04"
+      qtype: "temporal"
+    assert:
+      - type: python
+        value: file://assert_grade.py
+  - description: "dq041 temporal"
+    vars:
+      question: "Which host did ojones first access via RDP after the password reset?"
+      gold: "app-11"
+      qtype: "temporal"
+    assert:
+      - type: python
+        value: file://assert_grade.py
+  - description: "dq042 temporal"
+    vars:
+      question: "Which host did isato first access via RDP after the password reset?"
+      gold: "app-03"
+      qtype: "temporal"
+    assert:
+      - type: python
+        value: file://assert_grade.py
+  - description: "dq059 knowledge-update"
+    vars:
+      question: "What is the current role of host fs-43?"
+      gold: "file server"
+      qtype: "knowledge-update"
+    assert:
+      - type: python
+        value: file://assert_grade.py
+  - description: "dq060 knowledge-update"
+    vars:
+      question: "What is the current role of host srv-15?"
+      gold: "backup server"
+      qtype: "knowledge-update"
+    assert:
+      - type: python
+        value: file://assert_grade.py
+  - description: "dq061 knowledge-update"
+    vars:
+      question: "What is the current role of host db-21?"
+      gold: "build agent"
+      qtype: "knowledge-update"
+    assert:
+      - type: python
+        value: file://assert_grade.py
+  - description: "dq062 knowledge-update"
+    vars:
+      question: "What is the current role of host app-43?"
+      gold: "build agent"
+      qtype: "knowledge-update"
+    assert:
+      - type: python
+        value: file://assert_grade.py
+  - description: "dq063 knowledge-update"
+    vars:
+      question: "What is the current role of host web-46?"
+      gold: "backup server"
+      qtype: "knowledge-update"
+    assert:
+      - type: python
+        value: file://assert_grade.py

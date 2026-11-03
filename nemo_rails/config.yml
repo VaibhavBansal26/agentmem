@@ -1,0 +1,7 @@
+# Input rail only: refuse questions that ask about a person's intent, motive or guilt.
+# No LLM is configured; the check is the repo's rule-based TopicalRail, called as a custom action.
+models: []
+rails:
+  input:
+    flows:
+      - check topic

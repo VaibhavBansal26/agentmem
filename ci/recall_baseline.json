@@ -1,0 +1,11 @@
+{
+ "n": 30,
+ "recall@10": 0.9667,
+ "mrr": 1.0,
+ "by_type": {
+  "knowledge-update": 1.0,
+  "multi-hop": 0.875,
+  "single-hop": 1.0,
+  "temporal": 1.0
+ }
+}

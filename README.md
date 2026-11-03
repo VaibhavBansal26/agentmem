@@ -12,7 +12,7 @@ CI gates, and a pre-registered online A/B.
 | Online A/B, synthetic investigation set, OpenAI-SDK agent (340 sessions, pre-registered) | accuracy **0.621 to 0.797** with the reranker (+0.176, p = 0.0003; question-clustered 95% CI [+0.065, +0.281]) | `results/stage5_ab.md` |
 | Same set, Anthropic-SDK agent (85 questions) | 0.894 either way; reranker only trims tool calls (3.06 to 2.69) | `results/stage4_agents.md` |
 | Same set, retrieval only (85 questions, held out) | recall@10 0.831 to 0.909, MRR 0.820 to 0.902 | `results/stage3_chain_gated.md` |
-| LongMemEval_s and LoCoMo, retrieval only | **negative result for the heuristics**: BM25 fusion and the cross-encoder carry the gains; time-scope, entity and recency signals add nothing measurable | `results/stage2_ce.md`, `results/baselines.md` |
+| Pipeline vs the best baseline (dense top-50 + cross-encoder), same questions, retrieval only | **pre-registered criterion not met.** LoCoMo (1,982 q): recall@10 0.692 vs 0.662 (+0.030, 95% CI [+0.014, +0.046]) but multi-hop recall is worse (-0.073). LongMemEval_s held-out half (235 q): recall 0.848 vs 0.888 (-0.040 [-0.071, -0.009]), MRR gain not significant. The hybrid cross-encoder blend carries the LoCoMo gain; the heuristics add about 0.004 | `results/compare/OUTCOME.md` |
 
 Read these with the limits in mind: the domain data is synthetic and templated, domain results are in-distribution, each
 agent is one cheap model, and there are no answer-accuracy numbers on the public benchmarks. The Status section below
@@ -150,6 +150,7 @@ Results land in `results/<dataset>_<retriever>.md`.
   - Guardrails: the rule-based topical rail is weak on held-out prompts (recall 0.53, 3/30 benign wrongly blocked), Llama Guard 3 is implemented but untested against a real model (no Ollama), NeMo Guardrails wiring works without an LLM (`nemo_rails/`).
   - Not done: Langfuse (needs an account; sessions go to local SQLite), and the guardrails are not yet wired into the agent runners.
 - The answer grader was changed once after seeing the 5-question smoke test (exact phrases to stemmed clause words), because correct rephrasings were scored wrong; all four runs are graded by the final version.
+- Pre-registered comparison of the final pipeline against the best baseline on identical questions (`results/compare_PLAN.md`, outcome in `results/compare/OUTCOME.md`): criterion not met. Use "benchmarked", not "outperformed", for the public-benchmark retrieval claim.
 - Gold evidence is turn-level (`has_answer` for LongMemEval, `evidence` dia_ids for LoCoMo). LongMemEval abstention questions have no gold and are excluded from retrieval metrics.
 - Not yet: compression baseline, LLM-judge scoring, answer-accuracy numbers (need the paid answerer), reranker (Stage 2), domain data (Stage 3).
 - Data lives in `data/` (git-ignored; re-download from the sources above).

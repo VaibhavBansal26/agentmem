@@ -19,3 +19,4 @@ build/
 dist/
 *.egg-info/
 quickstart.db*
+results/_*.id

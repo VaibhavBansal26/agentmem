@@ -1,0 +1,85 @@
+name: gates
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: gates-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  recall-gate:
+    # Deterministic, no API key: unit tests plus retrieval quality on a fixed 30-question subset.
+    # Fails the PR if recall@10 or MRR drops more than 0.03 below ci/recall_baseline.json, or recall@10 < 0.80.
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: requirements-ci.txt
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/huggingface
+            .cache/embeddings.sqlite
+          key: models-bge-small-reranker-base-v1
+      - name: Install (CPU-only torch)
+        run: |
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install -r requirements-ci.txt
+      - name: Unit tests
+        run: python -m tests.test_smoke && python -m tests.test_stage4 && python -m tests.test_stage5 && python -m tests.test_guardrails
+      - name: Recall gate
+        run: python -m agentmem.gate_recall
+
+  answer-gate:
+    # Needs the ANTHROPIC_API_KEY repository secret; skipped (not failed) when it is absent, e.g. on forks.
+    # 20 fixed questions the agent currently answers correctly; fails below a 90% pass rate.
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    needs: recall-gate
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      PROMPTFOO_PASS_RATE_THRESHOLD: "90"
+      PROMPTFOO_DISABLE_TELEMETRY: "1"
+      PROMPTFOO_DISABLE_UPDATE: "1"
+      PROMPTFOO_DISABLE_SHARING: "1"
+    steps:
+      - name: Check for secret
+        id: key
+        run: |
+          if [ -n "$ANTHROPIC_API_KEY" ]; then echo "present=true" >> "$GITHUB_OUTPUT"; else echo "::notice::ANTHROPIC_API_KEY not set; skipping answer gate"; fi
+      - uses: actions/checkout@v4
+        if: steps.key.outputs.present == 'true'
+      - uses: actions/setup-python@v5
+        if: steps.key.outputs.present == 'true'
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: requirements-ci.txt
+      - uses: actions/setup-node@v4
+        if: steps.key.outputs.present == 'true'
+        with:
+          node-version: "22"
+      - uses: actions/cache@v4
+        if: steps.key.outputs.present == 'true'
+        with:
+          path: |
+            ~/.cache/huggingface
+            .cache/embeddings.sqlite
+            ~/.promptfoo/cache
+          key: models-bge-small-reranker-base-v1
+      - name: Install
+        if: steps.key.outputs.present == 'true'
+        run: |
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install -r requirements-ci.txt
+      - name: promptfoo answer checks
+        if: steps.key.outputs.present == 'true'
+        env:
+          PROMPTFOO_PYTHON: python
+        run: npx -y promptfoo@latest eval -c ci/promptfooconfig.yaml --max-concurrency 1 --no-progress-bar --no-share

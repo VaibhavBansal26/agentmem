@@ -7,9 +7,9 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from agentmem import agent_anthropic  # noqa: E402
-from agentmem.agents_common import McpTools  # noqa: E402
-from agentmem.run_agents import load_env  # noqa: E402
+from memorank import agent_anthropic  # noqa: E402
+from memorank.agents_common import McpTools  # noqa: E402
+from memorank.run_agents import load_env  # noqa: E402
 
 load_env()
 _loop, _tools = None, None

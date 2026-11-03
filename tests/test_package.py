@@ -8,8 +8,8 @@ import zlib
 
 import numpy as np
 
-from agentmem import Config, Memory
-from agentmem.adapters import anthropic_tools, openai_agents_tools
+from memorank import Config, Memory
+from memorank.adapters import anthropic_tools, openai_agents_tools
 
 
 def bow(texts):
@@ -128,9 +128,9 @@ def test_missing_extra_warns_instead_of_failing():
 
 def test_matches_the_evaluated_pipeline_on_the_domain_set():
     """The public class must rank exactly like the pipeline whose results are reported."""
-    from agentmem.domain import ASKED_AT
-    from agentmem.loaders import load_domain
-    from agentmem.service import MemoryService
+    from memorank.domain import ASKED_AT
+    from memorank.loaders import load_domain
+    from memorank.service import MemoryService
 
     qs = load_domain("datasets/securitydomain")
     svc = MemoryService(now=ASKED_AT, rerank=True, use_ce=True)

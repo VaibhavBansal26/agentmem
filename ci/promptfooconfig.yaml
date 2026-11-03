@@ -2,7 +2,7 @@
 # Run:  npx promptfoo@latest eval -c ci/promptfooconfig.yaml --max-concurrency 1
 # Pass-rate threshold is set by PROMPTFOO_PASS_RATE_THRESHOLD (CI uses 90, i.e. at most 2 of 20 may fail).
 # The cases are chosen from questions that already pass, so this detects regressions; it is not an accuracy estimate.
-description: agentmem answer regression check
+description: memorank answer regression check
 prompts:
   - "{{question}}"
 providers:

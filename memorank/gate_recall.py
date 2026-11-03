@@ -1,7 +1,7 @@
 """CI gate: retrieval quality of the full pipeline on a fixed 30-question subset.
 
-    python -m agentmem.gate_recall            # compare with ci/recall_baseline.json, exit 1 on regression
-    python -m agentmem.gate_recall --update   # recompute and overwrite the baseline (review the diff!)
+    python -m memorank.gate_recall            # compare with ci/recall_baseline.json, exit 1 on regression
+    python -m memorank.gate_recall --update   # recompute and overwrite the baseline (review the diff!)
 
 No LLM and no API key: it measures what the memory server would hand an agent. Fails if recall@10 or
 MRR drops more than TOLERANCE below the committed baseline, or recall@10 falls under FLOOR.
@@ -40,8 +40,8 @@ def evaluate():
         SUBSET.write_text(json.dumps(make_subset(questions), indent=1) + "\n")
     wanted = set(json.loads(SUBSET.read_text()))
     chosen = [q for q in questions if q.id in wanted]
-    # AGENTMEM_RERANK=off evaluates the dense baseline instead: used to prove the gate can fail.
-    on = os.environ.get("AGENTMEM_RERANK", "on") == "on"
+    # MEMORANK_RERANK=off evaluates the dense baseline instead: used to prove the gate can fail.
+    on = os.environ.get("MEMORANK_RERANK", "on") == "on"
     svc = MemoryService(now=ASKED_AT, rerank=on, use_ce=on)
     svc.bulk_load(chosen[0].memories)
     rows = []

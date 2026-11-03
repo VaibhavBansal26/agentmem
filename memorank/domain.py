@@ -1,6 +1,6 @@
 """Synthetic security-investigation history with planted incidents and exact ground truth.
 
-`python -m agentmem.domain` regenerates datasets/securitydomain/{memories,questions}.jsonl
+`python -m memorank.domain` regenerates datasets/securitydomain/{memories,questions}.jsonl
 from a fixed seed. Every question's gold records are known by construction.
 """
 import json

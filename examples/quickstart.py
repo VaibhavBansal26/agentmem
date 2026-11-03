@@ -1,5 +1,5 @@
-"""Quickstart: python examples/quickstart.py   (pip install 'agentmem[dense]' for the evaluated pipeline)."""
-from agentmem import Memory
+"""Quickstart: python examples/quickstart.py   (pip install 'memorank[dense]' for the evaluated pipeline)."""
+from memorank import Memory
 
 mem = Memory("quickstart.db")  # a SQLite file; use ":memory:" for a throwaway store
 
@@ -16,4 +16,4 @@ for question in ("What is the current role of web-12?", "What was the outcome of
 # Bring your own models: any function works, nothing is downloaded.
 #   Memory(embedder=lambda texts: my_embed(texts), scorer=lambda pairs: my_reranker(pairs))
 # Expose it to an agent:
-#   from agentmem.adapters import anthropic_tools, openai_agents_tools
+#   from memorank.adapters import anthropic_tools, openai_agents_tools

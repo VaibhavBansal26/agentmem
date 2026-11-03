@@ -134,7 +134,7 @@ def load_toy(limit=0):
 
 
 def load_domain(path, limit=0):
-    """Synthetic security-investigation set from `python -m agentmem.domain`."""
+    """Synthetic security-investigation set from `python -m memorank.domain`."""
     from .domain import ASKED_AT
 
     mems = [

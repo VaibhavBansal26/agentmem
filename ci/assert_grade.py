@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from agentmem.agents_common import grade  # noqa: E402
+from memorank.agents_common import grade  # noqa: E402
 
 
 def get_assert(output, context):

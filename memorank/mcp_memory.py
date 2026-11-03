@@ -1,8 +1,8 @@
 """MCP server exposing the agent memory: store_memory, recall, rerank.
 
-Environment: AGENTMEM_DB (sqlite path, default in-memory), AGENTMEM_RERANK=on|off (variant B / A),
-AGENTMEM_CE=1|0 (cross-encoder), AGENTMEM_NOW (epoch seconds, for replaying a fixed history),
-AGENTMEM_SEED_DIR (dataset directory with memories.jsonl to preload).
+Environment: MEMORANK_DB (sqlite path, default in-memory), MEMORANK_RERANK=on|off (variant B / A),
+MEMORANK_CE=1|0 (cross-encoder), MEMORANK_NOW (epoch seconds, for replaying a fixed history),
+MEMORANK_SEED_DIR (dataset directory with memories.jsonl to preload).
 """
 import os
 
@@ -12,7 +12,7 @@ from .loaders import load_domain
 from .service import MemoryService
 
 mcp = MCPServer(
-    "agentmem-memory",
+    "memorank-memory",
     instructions="Long-term memory for a security-investigation agent. Use recall to look up past "
                  "alerts, tickets and notes; use store_memory to save decisions and confirmed facts.",
 )
@@ -22,14 +22,14 @@ _svc = None
 def svc():
     global _svc
     if _svc is None:
-        now = os.environ.get("AGENTMEM_NOW")
+        now = os.environ.get("MEMORANK_NOW")
         _svc = MemoryService(
-            os.environ.get("AGENTMEM_DB", ":memory:"),
-            rerank=os.environ.get("AGENTMEM_RERANK", "on") == "on",
-            use_ce=os.environ.get("AGENTMEM_CE", "1") == "1",
+            os.environ.get("MEMORANK_DB", ":memory:"),
+            rerank=os.environ.get("MEMORANK_RERANK", "on") == "on",
+            use_ce=os.environ.get("MEMORANK_CE", "1") == "1",
             now=float(now) if now else None,
         )
-        seed = os.environ.get("AGENTMEM_SEED_DIR")
+        seed = os.environ.get("MEMORANK_SEED_DIR")
         if seed and not _svc.memories:
             _svc.bulk_load(load_domain(seed)[0].memories)
     return _svc
@@ -56,7 +56,7 @@ def rerank(query: str, candidates: list[dict]) -> list[dict]:
 
 
 def main():
-    """Console entry point: `agentmem-mcp` (configure with the AGENTMEM_* environment variables)."""
+    """Console entry point: `memorank-mcp` (configure with the MEMORANK_* environment variables)."""
     mcp.run("stdio")
 
 

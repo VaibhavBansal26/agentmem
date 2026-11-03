@@ -2,10 +2,10 @@ import asyncio
 import json
 from types import SimpleNamespace
 
-from agentmem import agent_anthropic, agent_openai
-from agentmem.agents_common import McpTools, grade
-from agentmem.loaders import load_domain
-from agentmem.mcp_eval import parse, server_params
+from memorank import agent_anthropic, agent_openai
+from memorank.agents_common import McpTools, grade
+from memorank.loaders import load_domain
+from memorank.mcp_eval import parse, server_params
 from mcp import ClientSession
 from mcp.client.stdio import stdio_client
 
@@ -31,7 +31,7 @@ def test_grade():
 
 
 async def _alerts():
-    async with stdio_client(server_params("agentmem.mcp_alerts")) as (r, w), ClientSession(r, w) as s:
+    async with stdio_client(server_params("memorank.mcp_alerts")) as (r, w), ClientSession(r, w) as s:
         await s.initialize()
         assert {t.name for t in (await s.list_tools()).tools} == {
             "search_alerts", "get_host", "get_user", "open_ticket_history"}
@@ -82,8 +82,8 @@ def test_memory_service_is_thread_safe():
     """The MCP server runs tool calls on worker threads; concurrent recalls must not break."""
     from concurrent.futures import ThreadPoolExecutor
 
-    from agentmem.domain import ASKED_AT
-    from agentmem.service import MemoryService
+    from memorank.domain import ASKED_AT
+    from memorank.service import MemoryService
 
     qs = load_domain("datasets/securitydomain")
     svc = MemoryService(now=ASKED_AT, use_ce=False)

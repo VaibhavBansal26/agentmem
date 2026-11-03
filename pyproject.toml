@@ -3,7 +3,7 @@ requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "agentmem"
+name = "memorank"
 version = "0.1.0"
 description = "Reranked long-term memory for agents: dense + BM25 candidates, cross-encoder scoring, entity-aware recency and chaining."
 readme = "README.md"
@@ -19,7 +19,7 @@ agents = ["openai-agents>=0.24", "anthropic>=2"]   # agent adapters and the eval
 all = ["sentence-transformers>=3", "mcp>=2", "openai-agents>=0.24", "anthropic>=2"]
 
 [project.scripts]
-agentmem-mcp = "agentmem.mcp_memory:main"
+memorank-mcp = "memorank.mcp_memory:main"
 
 [tool.setuptools.packages.find]
-include = ["agentmem*"]
+include = ["memorank*"]

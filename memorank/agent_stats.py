@@ -1,4 +1,4 @@
-"""Paired off-vs-on statistics for the agent runs: python -m agentmem.agent_stats
+"""Paired off-vs-on statistics for the agent runs: python -m memorank.agent_stats
 
 Re-grades the stored raw answers with the current grader, so grader changes need no reruns.
 """

@@ -3,7 +3,7 @@ import json
 import os
 from pathlib import Path
 
-CACHE_DIR = Path(os.environ.get("AGENTMEM_CACHE", ".cache"))
+CACHE_DIR = Path(os.environ.get("MEMORANK_CACHE", ".cache"))
 
 
 def key(*parts) -> str:

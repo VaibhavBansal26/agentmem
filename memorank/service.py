@@ -149,7 +149,7 @@ class MemoryService:
             try:
                 from sentence_transformers import CrossEncoder
             except ImportError as e:
-                raise ImportError("The cross-encoder needs sentence-transformers: pip install 'agentmem[dense]', "
+                raise ImportError("The cross-encoder needs sentence-transformers: pip install 'memorank[dense]', "
                                   "pass your own scorer=..., or construct with use_ce=False.") from e
             self._ce = CrossEncoder(self._ce_model)
 

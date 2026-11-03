@@ -11,7 +11,7 @@ import zlib
 
 import numpy as np
 
-from agentmem import Memory
+from memorank import Memory
 
 KINDS = ["web", "db", "app", "wks", "srv", "fs"]
 TEMPLATES = ["Antivirus scan completed on {h} with no findings", "Backup job for {h} finished successfully",

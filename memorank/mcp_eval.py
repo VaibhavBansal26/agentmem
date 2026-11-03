@@ -20,7 +20,7 @@ from .loaders import load_domain
 def server_params(module, **env):
     base = {k: v for k, v in os.environ.items() if k not in ("PYTHONPATH",)}
     return StdioServerParameters(command=sys.executable, args=["-m", module],
-                                 env={**base, "AGENTMEM_NOW": str(ASKED_AT), **env})
+                                 env={**base, "MEMORANK_NOW": str(ASKED_AT), **env})
 
 
 def parse(res):
@@ -32,8 +32,8 @@ def parse(res):
 
 
 async def run_variant(rerank, questions, k, data_dir):
-    params = server_params("agentmem.mcp_memory", AGENTMEM_RERANK="on" if rerank else "off",
-                           AGENTMEM_SEED_DIR=data_dir)
+    params = server_params("memorank.mcp_memory", MEMORANK_RERANK="on" if rerank else "off",
+                           MEMORANK_SEED_DIR=data_dir)
     rows, lat = [], []
     async with stdio_client(params) as (r, w), ClientSession(r, w) as session:
         await session.initialize()

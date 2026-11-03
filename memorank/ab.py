@@ -1,6 +1,6 @@
 """Online A/B over synthetic sessions: a flag assigns each session to reranker A (dense top-k) or B.
 
-    python -m agentmem.ab --sessions 300 --db ab/sessions.db
+    python -m memorank.ab --sessions 300 --db ab/sessions.db
 
 Resumable: sessions already in the DB are skipped. Plan and decision rule: ab/PREREG.md.
 """

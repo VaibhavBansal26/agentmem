@@ -1,8 +1,8 @@
 """Does the final pipeline beat the best baseline on the SAME questions? Plan and criterion: results/compare_PLAN.md.
 
-    python -m agentmem.compare run --dataset longmemeval     # resumable, one JSON row per question
-    python -m agentmem.compare run --dataset locomo
-    python -m agentmem.compare report                        # paired bootstrap CIs and the verdict
+    python -m memorank.compare run --dataset longmemeval     # resumable, one JSON row per question
+    python -m memorank.compare run --dataset locomo
+    python -m memorank.compare report                        # paired bootstrap CIs and the verdict
 
 Systems, all retrieval-only at k=10 over the full haystack of each question:
   ce_baseline  dense top-50 (bge-small) reranked by bge-reranker-base: the best baseline from Stage 1

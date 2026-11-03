@@ -4,12 +4,12 @@ import zlib
 
 import numpy as np
 
-from agentmem.domain import ASKED_AT
-from agentmem.index import StoreIndex
-from agentmem.loaders import load_domain
-from agentmem.retrievers import BM25
-from agentmem.schema import Memory
-from agentmem.service import MemoryService
+from memorank.domain import ASKED_AT
+from memorank.index import StoreIndex
+from memorank.loaders import load_domain
+from memorank.retrievers import BM25
+from memorank.schema import Memory
+from memorank.service import MemoryService
 
 
 def bow(texts):

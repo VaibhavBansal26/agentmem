@@ -44,7 +44,7 @@ class LangfuseSink:
         self.client = Langfuse()
 
     def record(self, **row):
-        trace = self.client.trace(name="agentmem-session", id=row["session_id"], tags=[f"variant:{row['variant']}"],
+        trace = self.client.trace(name="memorank-session", id=row["session_id"], tags=[f"variant:{row['variant']}"],
                                   input=row["question_id"], output=row["answer"],
                                   metadata={k: row[k] for k in ("qtype", "tool_calls", "tool_errors", "latency_s")})
         trace.score(name="correct", value=float(row["correct"]))

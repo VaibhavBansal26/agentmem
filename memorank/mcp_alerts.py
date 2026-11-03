@@ -1,8 +1,8 @@
 """MCP server for a live alert queue over the synthetic security history.
 
-It only sees the last AGENTMEM_LIVE_DAYS days (default 2) of alerts, like a SIEM's hot tier.
+It only sees the last MEMORANK_LIVE_DAYS days (default 2) of alerts, like a SIEM's hot tier.
 Older activity is archived, so questions about earlier incidents need the memory server.
-Environment: AGENTMEM_SEED_DIR (default datasets/securitydomain), AGENTMEM_NOW, AGENTMEM_LIVE_DAYS.
+Environment: MEMORANK_SEED_DIR (default datasets/securitydomain), MEMORANK_NOW, MEMORANK_LIVE_DAYS.
 """
 import os
 import re
@@ -14,15 +14,15 @@ from .loaders import load_domain
 from .rerank import id_tokens
 from .service import iso
 
-mcp = MCPServer("agentmem-alerts", instructions="Live alert queue (recent events only).")
+mcp = MCPServer("memorank-alerts", instructions="Live alert queue (recent events only).")
 _state = {}
 
 
 def state():
     if not _state:
-        mems = load_domain(os.environ.get("AGENTMEM_SEED_DIR", "datasets/securitydomain"))[0].memories
-        now = float(os.environ.get("AGENTMEM_NOW", ASKED_AT))
-        days = float(os.environ.get("AGENTMEM_LIVE_DAYS", "2"))
+        mems = load_domain(os.environ.get("MEMORANK_SEED_DIR", "datasets/securitydomain"))[0].memories
+        now = float(os.environ.get("MEMORANK_NOW", ASKED_AT))
+        days = float(os.environ.get("MEMORANK_LIVE_DAYS", "2"))
         _state.update(all=mems, now=now,
                       live=[m for m in mems if now - days * DAY < m.timestamp <= now],
                       known=set().union(*(id_tokens(m.text) for m in mems)))

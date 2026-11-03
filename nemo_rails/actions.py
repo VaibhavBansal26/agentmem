@@ -1,6 +1,6 @@
 from nemoguardrails.actions import action
 
-from agentmem.guardrails import TopicalRail
+from memorank.guardrails import TopicalRail
 
 _rail = TopicalRail()
 

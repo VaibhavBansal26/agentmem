@@ -1,4 +1,4 @@
-"""A/B analysis: python -m agentmem.ab_analysis [--db ab/sessions.db]
+"""A/B analysis: python -m memorank.ab_analysis [--db ab/sessions.db]
 
 Decision rule (fixed in ab/PREREG.md before the run): promote B only if each arm has at least
 MIN_PER_ARM sessions, the two-sided two-proportion z-test gives p < ALPHA with B > A, AND the

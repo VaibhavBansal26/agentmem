@@ -1,8 +1,8 @@
 import math
 
-from agentmem.ab_analysis import analyze, cluster_bootstrap, z_test
-from agentmem.flags import Flags
-from agentmem.telemetry import LocalSink
+from memorank.ab_analysis import analyze, cluster_bootstrap, z_test
+from memorank.flags import Flags
+from memorank.telemetry import LocalSink
 
 
 def test_z_test_matches_hand_calculation():

@@ -44,7 +44,7 @@ def anthropic_tools(mem):
 
 
 def openai_agents_tools(mem):
-    """Returns [memory_recall, memory_store] as OpenAI Agents SDK function tools (needs agentmem[agents])."""
+    """Returns [memory_recall, memory_store] as OpenAI Agents SDK function tools (needs memorank[agents])."""
     from agents import function_tool
 
     @function_tool(strict_mode=False, name_override="memory_recall", description_override=RECALL_DOC)

@@ -17,9 +17,9 @@ def stdio(module, **env):
 
 
 def build(rerank, model=MODEL):
-    memory = stdio("agentmem.mcp_memory", AGENTMEM_RERANK="on" if rerank else "off",
-                   AGENTMEM_SEED_DIR="datasets/securitydomain")
-    alerts = stdio("agentmem.mcp_alerts")
+    memory = stdio("memorank.mcp_memory", MEMORANK_RERANK="on" if rerank else "off",
+                   MEMORANK_SEED_DIR="datasets/securitydomain")
+    alerts = stdio("memorank.mcp_alerts")
     agent = Agent(name="investigator", instructions=SYSTEM_PROMPT, model=model,
                   mcp_servers=[memory, alerts])
     return agent, memory, alerts

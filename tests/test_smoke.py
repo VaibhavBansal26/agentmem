@@ -1,5 +1,5 @@
-from agentmem import loaders, metrics, retrievers
-from agentmem.bench import run
+from memorank import loaders, metrics, retrievers
+from memorank.bench import run
 
 
 def test_metrics():
@@ -41,7 +41,7 @@ def test_longmemeval_no_gold_after_question_date():
 
 
 def test_domain_generator_is_consistent():
-    from agentmem import domain
+    from memorank import domain
 
     recs, qs = domain.build()
     assert (recs, qs) == domain.build()  # seeded: reproducible

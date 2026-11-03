@@ -1,8 +1,8 @@
 """Run the domain questions through an agent with the reranker off or on.
 
-    python -m agentmem.run_agents --agent anthropic --reranker on
-    python -m agentmem.run_agents --agent openai --reranker off
-    python -m agentmem.run_agents --summarize
+    python -m memorank.run_agents --agent anthropic --reranker on
+    python -m memorank.run_agents --agent openai --reranker off
+    python -m memorank.run_agents --summarize
 
 Needs ANTHROPIC_API_KEY / OPENAI_API_KEY, exported in your shell or put in a git-ignored .env
 (see .env.example). Every tool call is logged to

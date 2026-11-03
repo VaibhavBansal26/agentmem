@@ -1,4 +1,4 @@
-"""Public API: `from agentmem import Memory`.
+"""Public API: `from memorank import Memory`.
 
     mem = Memory("memories.db")
     mem.add("Host web-12 role set to production web server", entities=["web-12"])
@@ -35,8 +35,8 @@ class Hit:
 class Config:
     """Everything tunable. None means the evaluated defaults (see README for how they were chosen)."""
 
-    weights: dict = None  # signal weights, see agentmem.service.WEIGHTS
-    chain: dict = None  # entity-chaining and recency-bonus parameters, see agentmem.service.CHAIN
+    weights: dict = None  # signal weights, see memorank.service.WEIGHTS
+    chain: dict = None  # entity-chaining and recency-bonus parameters, see memorank.service.CHAIN
     dense_model: str = "BAAI/bge-small-en-v1.5"
     reranker_model: str = "BAAI/bge-reranker-base"
 
@@ -82,7 +82,7 @@ class Memory:
         if embedder is None and not have_st:
             warnings.warn("sentence-transformers is not installed: dense retrieval falls back to a lexical hashing "
                           "embedding and there is no cross-encoder. Quality is lower; "
-                          "pip install 'agentmem[dense]' for the evaluated pipeline.", stacklevel=2)
+                          "pip install 'memorank[dense]' for the evaluated pipeline.", stacklevel=2)
         cache = False if path == ":memory:" else f"{path}.emb.sqlite"  # never write into the caller's cwd
         self._svc = MemoryService(
             path, rerank=rerank, use_ce=cross_encoder and scorer is None and have_st, now=_ts(now), scorer=scorer,

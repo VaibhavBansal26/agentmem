@@ -7,7 +7,7 @@ PYTHON ?= $(if $(wildcard .venv/bin/python),.venv/bin/python,python3)
 
 .PHONY: bench test gate
 bench:
-	$(PYTHON) -m agentmem.bench --dataset $(DATASET) --retriever $(RETRIEVER) --k $(K) --limit $(LIMIT) $(if $(DATA),--path $(DATA),)
+	$(PYTHON) -m memorank.bench --dataset $(DATASET) --retriever $(RETRIEVER) --k $(K) --limit $(LIMIT) $(if $(DATA),--path $(DATA),)
 
 test:
 	$(PYTHON) -m tests.test_smoke
@@ -18,4 +18,4 @@ test:
 	$(PYTHON) -m tests.test_index
 
 gate:
-	$(PYTHON) -m agentmem.gate_recall
+	$(PYTHON) -m memorank.gate_recall

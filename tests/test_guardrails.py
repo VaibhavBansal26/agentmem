@@ -3,8 +3,8 @@ import json
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
-from agentmem.guardrails import REFUSAL_INTENT, REFUSAL_UNSAFE, Guarded, LlamaGuard, TopicalRail
-from agentmem.loaders import load_domain
+from memorank.guardrails import REFUSAL_INTENT, REFUSAL_UNSAFE, Guarded, LlamaGuard, TopicalRail
+from memorank.loaders import load_domain
 
 SEEN = []
 

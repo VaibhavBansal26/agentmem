@@ -75,9 +75,9 @@ class McpTools:
             raise
 
     async def _connect(self):
-        specs = [("agentmem.mcp_memory", {"AGENTMEM_RERANK": "on" if self.rerank else "off",
-                                          "AGENTMEM_SEED_DIR": "datasets/securitydomain"}),
-                 ("agentmem.mcp_alerts", {})]
+        specs = [("memorank.mcp_memory", {"MEMORANK_RERANK": "on" if self.rerank else "off",
+                                          "MEMORANK_SEED_DIR": "datasets/securitydomain"}),
+                 ("memorank.mcp_alerts", {})]
         for module, env in specs:
             r, w = await self.stack.enter_async_context(stdio_client(server_params(module, **env)))
             session = await self.stack.enter_async_context(ClientSession(r, w))

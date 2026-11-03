@@ -76,7 +76,7 @@ def featurize(q, dense, bm25, n_dense=50, n_bm25=20):
         ((ts >= scope[0]) & (ts <= scope[1])).astype(float) if scope else np.zeros(len(cand))
     )
     return {
-        "id": q.id, "qtype": q.qtype, "gold": set(q.gold_ids),
+        "id": q.id, "query": q.text, "qtype": q.qtype, "gold": set(q.gold_ids),
         "ids": [mems[i].id for i in cand],
         "dense": d[cand], "bm25": b[cand], "ts": ts, "entity": ent,
         "in_scope": in_scope, "has_scope": scope is not None,
@@ -93,11 +93,13 @@ def _time_rank(ts):
     return order / max(len(ts) - 1, 1)
 
 
-WEIGHTS = {"bm25": 0.0, "scope": 0.0, "entity": 0.0, "recency": 0.0, "recency_cue": 0.0}
+WEIGHTS = {"dense": 1.0, "ce": 0.0, "bm25": 0.0, "scope": 0.0, "entity": 0.0, "recency": 0.0, "recency_cue": 0.0}
 
 
 def score(F, w):
-    s = _z(F["dense"]) + w["bm25"] * _z(F["bm25"])
+    s = w["dense"] * _z(F["dense"]) + w["bm25"] * _z(F["bm25"])
+    if w["ce"] and "ce" in F:
+        s = s + w["ce"] * _z(F["ce"])
     s = s + w["scope"] * F["in_scope"] + w["entity"] * F["entity"]
     tr = _time_rank(F["ts"])
     s = s + w["recency"] * tr + (w["recency_cue"] * tr if F["cue"] else 0.0)
@@ -106,3 +108,20 @@ def score(F, w):
 
 def rank_ids(F, w):
     return [F["ids"][i] for i in np.argsort(-score(F, w), kind="stable")]
+
+
+def with_ce_scores(F, texts, ce, top_fused=30, top_each=10, batch_size=32):
+    """Restrict F to a small pool and add cross-encoder scores for it.
+
+    Pool = fused (dense+bm25) top-30 plus the dense and BM25 top-10, so the dense-only
+    and hybrid top-10 rankings are unchanged by the restriction.
+    """
+    fused = _z(F["dense"]) + _z(F["bm25"])
+    keep = set(np.argsort(-fused)[:top_fused]) | set(np.argsort(-F["dense"])[:top_each]) \
+        | set(np.argsort(-F["bm25"])[:top_each])
+    keep = sorted(keep)
+    out = {k: (v[keep] if isinstance(v, np.ndarray) else v) for k, v in F.items()}
+    out["ids"] = [F["ids"][i] for i in keep]
+    out["ce"] = np.asarray(ce.predict([(F["query"], texts[F["ids"][i]]) for i in keep],
+                                      batch_size=batch_size, show_progress_bar=False))
+    return out

@@ -11,3 +11,4 @@ bench:
 
 test:
 	$(PYTHON) -m tests.test_smoke
+	$(PYTHON) -m tests.test_stage4

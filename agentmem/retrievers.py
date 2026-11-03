@@ -2,9 +2,12 @@
 import hashlib
 import math
 import re
+import sqlite3
 from collections import Counter
 
 import numpy as np
+
+from .cache import CACHE_DIR
 
 
 def _tokens(s):
@@ -71,6 +74,15 @@ class Dense:
             self._model = None
             self.backend = "hashing-fallback"
         self._memo = {}
+        self._disk = None
+        if self._model is not None:
+            CACHE_DIR.mkdir(parents=True, exist_ok=True)
+            self._disk = sqlite3.connect(CACHE_DIR / "embeddings.sqlite", timeout=60)
+            self._disk.execute("CREATE TABLE IF NOT EXISTS emb (h TEXT PRIMARY KEY, v BLOB)")
+            self._model_name = model
+
+    def _key(self, text):
+        return hashlib.sha1(f"{self._model_name}|{text}".encode()).hexdigest()
 
     def _hash_embed(self, text):
         v = np.zeros(self.dim, dtype=np.float32)
@@ -85,10 +97,23 @@ class Dense:
             return np.stack([self._hash_embed(t) for t in texts])
         if is_query:
             texts = [self.QUERY_PREFIX + t for t in texts]
-        missing = [t for t in texts if t not in self._memo]
+        missing = [t for t in dict.fromkeys(texts) if t not in self._memo]
+        if missing and self._disk is not None:  # on-disk cache shared across processes
+            keys = {self._key(t): t for t in missing}
+            found = {}
+            for i in range(0, len(keys), 500):
+                chunk = list(keys)[i:i + 500]
+                q = f"SELECT h, v FROM emb WHERE h IN ({','.join('?' * len(chunk))})"
+                found.update({h: np.frombuffer(v, dtype=np.float32) for h, v in self._disk.execute(q, chunk)})
+            self._memo.update({keys[h]: v for h, v in found.items()})
+            missing = [t for t in missing if t not in self._memo]
         if missing:
             vecs = self._model.encode(missing, normalize_embeddings=True, batch_size=64)
             self._memo.update(zip(missing, vecs))
+            if self._disk is not None:
+                self._disk.executemany("INSERT OR REPLACE INTO emb VALUES (?, ?)", [
+                    (self._key(t), np.asarray(v, dtype=np.float32).tobytes()) for t, v in zip(missing, vecs)])
+                self._disk.commit()
         return np.stack([self._memo[t] for t in texts])
 
     def scores(self, query, memories):

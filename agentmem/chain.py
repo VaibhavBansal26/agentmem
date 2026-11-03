@@ -35,9 +35,14 @@ _DF = {}
 
 
 def _df(tok):
-    if id(tok) not in _DF:
-        _DF[id(tok)] = Counter(t for s in tok for t in s)
-    return _DF[id(tok)]
+    """Document frequencies per token list. The cache keeps a reference to each list so its id()
+    cannot be recycled for a different list; it holds only the 8 most recent ones."""
+    entry = _DF.get(id(tok))
+    if entry is None or entry[0] is not tok:
+        if len(_DF) >= 8:
+            _DF.pop(next(iter(_DF)))
+        entry = _DF[id(tok)] = (tok, Counter(t for s in tok for t in s))
+    return entry[1]
 
 
 def update_bonus(F, FULL, base, p):

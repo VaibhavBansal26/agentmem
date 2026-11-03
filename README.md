@@ -40,8 +40,11 @@ for hit in mem.recall("What is the current role of web-12?", k=5):
     print(hit.rank, hit.time, hit.text)
 ```
 
-Install from a checkout (not on PyPI): `pip install .` for the light core, or `pip install ".[dense]"` for the evaluated
-pipeline (bge-small dense retrieval + bge-reranker-base cross-encoder). Extras: `dense`, `mcp` (the MCP servers,
+Not on PyPI. Install the light core straight from GitHub (tested in a clean environment):
+`pip install "git+https://github.com/VaibhavBansal26/agentmem.git"`. From a checkout, `pip install .` for the core, or
+`pip install ".[dense]"` for the evaluated pipeline (bge-small dense retrieval + bge-reranker-base cross-encoder).
+Extras from a git URL use pip's usual form, `"agentmem[dense] @ git+https://github.com/VaibhavBansal26/agentmem.git"`
+(only the core install was tested). Extras: `dense`, `mcp` (the MCP servers,
 console script `agentmem-mcp`), `agents` (OpenAI Agents SDK and Anthropic SDK), `all`.
 
 - **Light core:** only NumPy is required. `import agentmem` loads no model libraries. Without the `dense` extra it falls

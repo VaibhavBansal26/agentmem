@@ -29,9 +29,8 @@ K = 10
 
 
 def cmd_featurize(a):
-    qs = {"longmemeval": loaders.load_longmemeval, "locomo": loaders.load_locomo}[a.dataset](
-        a.path, a.limit
-    )
+    qs = {"longmemeval": loaders.load_longmemeval, "locomo": loaders.load_locomo,
+          "domain": loaders.load_domain}[a.dataset](a.path, a.limit)
     dense, bm25 = Dense(), BM25()
     out = []
     for i, q in enumerate(qs):
@@ -89,8 +88,9 @@ def cmd_cefeat(a):
     from sentence_transformers import CrossEncoder
 
     ce = CrossEncoder("BAAI/bge-reranker-base")
-    path = {"longmemeval": a.lme_path, "locomo": a.locomo_path}[a.dataset]
-    qs = {"longmemeval": loaders.load_longmemeval, "locomo": loaders.load_locomo}[a.dataset](path)
+    path = {"longmemeval": a.lme_path, "locomo": a.locomo_path, "domain": a.domain_path}[a.dataset]
+    qs = {"longmemeval": loaders.load_longmemeval, "locomo": loaders.load_locomo,
+          "domain": loaders.load_domain}[a.dataset](path)
     by_id = {q.id: q for q in qs}
     feats = pickle.load(open(FEATS / f"{a.dataset}.pkl", "rb"))
     partial = FEATS / f"{a.dataset}_ce.partial.pkl"
@@ -188,6 +188,35 @@ def cmd_tune_llm(a):
     Path("results/stage2_llmscope.md").write_text(text)
 
 
+# Weights fit on even-indexed LongMemEval_s only (results/stage2_ce.md); never retuned on the domain set.
+FROZEN = {"dense": 1.0, "ce": 2, "scope_llm": 0.0, "bm25": 2, "scope": 4, "entity": 0.0,
+          "recency": 0.5, "recency_cue": 0.5}
+
+
+def cmd_tune_domain(a):
+    feats = pickle.load(open(FEATS / "domain_ce.pkl", "rb"))
+    cfgs = [("dense only", dict(WEIGHTS)), ("dense+bm25 (w=1)", {**WEIGHTS, "bm25": 1.0}),
+            ("CE only", {**WEIGHTS, "dense": 0.0, "ce": 1.0}),
+            ("frozen LME-tuned, with CE", FROZEN),
+            ("frozen minus scope", {**FROZEN, "scope": 0.0}),
+            ("frozen minus recency+cue", {**FROZEN, "recency": 0.0, "recency_cue": 0.0}),
+            ("frozen + entity 1 (exploratory)", {**FROZEN, "entity": 1.0}),
+            ("frozen + entity 2 (exploratory)", {**FROZEN, "entity": 2.0})]
+    out = ["# Stage 3: security-domain set (k=10, retrieval only, no training)\n",
+           f"{len(feats)} questions over a {3069}-record synthetic history. Weights are frozen from "
+           "LongMemEval_s; nothing is tuned on this set. Pool: fused top-30 plus dense and BM25 top-10.\n",
+           "| config | recall@10 | MRR |\n|---|---|---|"]
+    for label, cw in cfgs:
+        rows = evaluate(feats, cw)
+        rr, mm = metrics.mean_ci([x[1] for x in rows]), metrics.mean_ci([x[2] for x in rows])
+        out.append(f"| {label} | {rr[0]:.3f} [{rr[1]:.3f}, {rr[2]:.3f}] | {mm[0]:.3f} [{mm[1]:.3f}, {mm[2]:.3f}] |")
+    for label, cw in (cfgs[2], cfgs[3], cfgs[6]):
+        out.append(f"\nPer type, {label}:\n\n{table(evaluate(feats, cw))}")
+    text = "\n".join(out) + "\n"
+    print(text)
+    Path("results/stage3_rerank.md").write_text(text)
+
+
 def cmd_tune_ce(a):
     lme = pickle.load(open(FEATS / "longmemeval_ce.pkl", "rb"))
     loc = pickle.load(open(FEATS / "locomo_ce.pkl", "rb"))
@@ -253,14 +282,15 @@ def main():
     ap = argparse.ArgumentParser()
     sub = ap.add_subparsers(required=True)
     f = sub.add_parser("featurize")
-    f.add_argument("--dataset", choices=["longmemeval", "locomo"], required=True)
+    f.add_argument("--dataset", choices=["longmemeval", "locomo", "domain"], required=True)
     f.add_argument("--path", required=True)
     f.add_argument("--limit", type=int, default=0)
     f.set_defaults(fn=cmd_featurize)
     t = sub.add_parser("tune")
     t.set_defaults(fn=cmd_tune)
     c = sub.add_parser("cefeat")
-    c.add_argument("--dataset", choices=["longmemeval", "locomo"], required=True)
+    c.add_argument("--dataset", choices=["longmemeval", "locomo", "domain"], required=True)
+    c.add_argument("--domain-path", default="datasets/securitydomain")
     c.add_argument("--lme-path", default="data/longmemeval/longmemeval_s_cleaned.json")
     c.add_argument("--locomo-path", default="data/locomo/locomo10.json")
     c.add_argument("--stride", type=int, default=1, help="score every Nth question")
@@ -269,6 +299,7 @@ def main():
     t3.add_argument("--lme-labels", default="data/scopes/lme_out.jsonl")
     t3.add_argument("--locomo-labels", default="data/scopes/locomo_out.jsonl")
     t3.set_defaults(fn=cmd_tune_llm)
+    sub.add_parser("tune-domain").set_defaults(fn=cmd_tune_domain)
     t2 = sub.add_parser("tune-ce")
     t2.set_defaults(fn=cmd_tune_ce)
     a = ap.parse_args()

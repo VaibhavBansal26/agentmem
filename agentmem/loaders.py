@@ -131,3 +131,18 @@ def load_toy(limit=0):
         Question("toy-exfil", "Which IP did alice send data to?", "multi-hop",
                  "203.0.113.7", ("m4",), now, mems),
     ][: limit or None]
+
+
+def load_domain(path, limit=0):
+    """Synthetic security-investigation set from `python -m agentmem.domain`."""
+    from .domain import ASKED_AT
+
+    mems = [
+        Memory(m["id"], m["text"], m["ts"], m["source"], tuple(m["entities"]), m["importance"])
+        for m in map(json.loads, open(f"{path}/memories.jsonl"))
+    ]
+    out = [
+        Question(q["id"], q["text"], q["qtype"], q["answer"], tuple(q["gold"]), ASKED_AT, mems)
+        for q in map(json.loads, open(f"{path}/questions.jsonl"))
+    ]
+    return out[: limit or None]

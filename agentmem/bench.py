@@ -12,9 +12,8 @@ def load(dataset, path, limit):
         return loaders.load_toy(limit)
     if not path:
         raise SystemExit(f"--path is required for {dataset}")
-    return {"longmemeval": loaders.load_longmemeval, "locomo": loaders.load_locomo}[dataset](
-        path, limit
-    )
+    return {"longmemeval": loaders.load_longmemeval, "locomo": loaders.load_locomo,
+            "domain": loaders.load_domain}[dataset](path, limit)
 
 
 def run(questions, retriever, k, use_answerer):
@@ -59,7 +58,7 @@ def table(rows, k, use_answerer):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--dataset", choices=["toy", "longmemeval", "locomo"], default="toy")
+    ap.add_argument("--dataset", choices=["toy", "longmemeval", "locomo", "domain"], default="toy")
     ap.add_argument("--path")
     ap.add_argument("--retriever", default="bm25")
     ap.add_argument("--k", type=int, default=10)

@@ -40,7 +40,20 @@ def test_longmemeval_no_gold_after_question_date():
         assert all(ts[g] <= q.asked_at for g in q.gold_ids), q.id
 
 
+def test_domain_generator_is_consistent():
+    from agentmem import domain
+
+    recs, qs = domain.build()
+    assert (recs, qs) == domain.build()  # seeded: reproducible
+    ids = {r["id"]: r for r in recs}
+    assert len(ids) == len(recs) and all(r["ts"] <= domain.ASKED_AT for r in recs)
+    for q in qs:
+        assert all(g in ids for g in q["gold"]), q["id"]
+        assert (q["qtype"] == "abstention") == (not q["gold"]), q["id"]
+
+
 if __name__ == "__main__":
+    test_domain_generator_is_consistent()
     test_longmemeval_no_gold_after_question_date()
     test_metrics()
     test_baselines_run_on_toy()

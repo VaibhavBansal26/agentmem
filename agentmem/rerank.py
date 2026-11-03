@@ -48,6 +48,14 @@ def time_scope(query, now):
     return None
 
 
+_ID_RE = re.compile(r"[a-z0-9][\w.:/-]*")
+
+
+def id_tokens(text):
+    """Identifier-style tokens (host-07, 198.51.100.5, T-4003) kept whole, as in query_entities."""
+    return {t.strip(".:-/") for t in _ID_RE.findall(text.lower())}
+
+
 def query_entities(query):
     """Lowercased proper-noun-ish and numeric tokens from the query."""
     ents = set()
@@ -70,7 +78,7 @@ def featurize(q, dense, bm25, n_dense=50, n_bm25=20):
     ents = query_entities(q.text)
     ts = np.array([mems[i].timestamp for i in cand])
     ent = np.array([
-        len(ents & set(_tokens(mems[i].text))) / len(ents) if ents else 0.0 for i in cand
+        len(ents & id_tokens(mems[i].text)) / len(ents) if ents else 0.0 for i in cand
     ])
     in_scope = (
         ((ts >= scope[0]) & (ts <= scope[1])).astype(float) if scope else np.zeros(len(cand))

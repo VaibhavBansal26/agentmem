@@ -6,3 +6,4 @@ results/_chain.log
 results/_*.log
 results/_old/
 results/_stage
+.env

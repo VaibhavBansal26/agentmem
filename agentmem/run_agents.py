@@ -4,18 +4,32 @@
     python -m agentmem.run_agents --agent openai --reranker off
     python -m agentmem.run_agents --summarize
 
-Needs ANTHROPIC_API_KEY / OPENAI_API_KEY in your shell. Every tool call is logged to
+Needs ANTHROPIC_API_KEY / OPENAI_API_KEY, exported in your shell or put in a git-ignored .env
+(see .env.example). Every tool call is logged to
 results/agent_runs/<agent>_<variant>.jsonl and the table is built from those logs.
 """
 import argparse
 import asyncio
 import glob
+import os
+from pathlib import Path
 
 from .agents_common import grade, log_row, summarize
 from .loaders import load_domain
 
 
+def load_env(path=".env"):
+    """Read KEY=VALUE lines from a git-ignored .env; existing environment variables win."""
+    if Path(path).exists():
+        for line in Path(path).read_text().splitlines():
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                k, v = line.split("=", 1)
+                os.environ.setdefault(k.strip(), v.strip().strip("\"'"))
+
+
 async def main():
+    load_env()
     ap = argparse.ArgumentParser()
     ap.add_argument("--agent", choices=["anthropic", "openai"])
     ap.add_argument("--reranker", choices=["on", "off"], default="on")

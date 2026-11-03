@@ -22,9 +22,9 @@ async def answer(question, tools, client=None, model=MODEL, max_turns=8):
         messages.append({"role": "assistant", "content": resp.content})
         results = []
         for u in uses:
-            calls.append({"name": u.name, "args": u.input})
-            results.append({"type": "tool_result", "tool_use_id": u.id,
-                            "content": await tools.call(u.name, u.input)})
+            out = await tools.call(u.name, u.input)
+            calls.append({"name": u.name, "args": u.input, "error": out.startswith('{"error"')})
+            results.append({"type": "tool_result", "tool_use_id": u.id, "content": out})
         messages.append({"role": "user", "content": results})
     return "", calls
 

@@ -3,6 +3,7 @@ import hashlib
 import math
 import re
 import sqlite3
+import threading
 from collections import Counter
 
 import numpy as np
@@ -75,9 +76,11 @@ class Dense:
             self.backend = "hashing-fallback"
         self._memo = {}
         self._disk = None
+        self._lock = threading.RLock()
         if self._model is not None:
             CACHE_DIR.mkdir(parents=True, exist_ok=True)
-            self._disk = sqlite3.connect(CACHE_DIR / "embeddings.sqlite", timeout=60)
+            self._disk = sqlite3.connect(CACHE_DIR / "embeddings.sqlite", timeout=60, check_same_thread=False)
+            self._lock = threading.RLock()  # the connection and the model are shared across threads
             self._disk.execute("CREATE TABLE IF NOT EXISTS emb (h TEXT PRIMARY KEY, v BLOB)")
             self._model_name = model
 
@@ -93,6 +96,10 @@ class Dense:
         return v / n if n else v
 
     def embed(self, texts, is_query=False):
+        with self._lock:
+            return self._embed(texts, is_query)
+
+    def _embed(self, texts, is_query=False):
         if self._model is None:
             return np.stack([self._hash_embed(t) for t in texts])
         if is_query:

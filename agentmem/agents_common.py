@@ -24,15 +24,38 @@ def norm(s):
     return re.sub(r"[^a-z0-9.\- ]+", " ", s.lower()).strip()
 
 
+STOP = {"the", "a", "an", "was", "were", "is", "are", "be", "been", "being", "of", "to", "and", "that",
+        "it", "its", "with", "by", "for", "in", "on", "at", "as", "had", "has", "have"}
+
+
+def stem(w):
+    if w == "not":
+        return "no"
+    if any(c.isdigit() for c in w):  # ids, IPs, numbers stay exact
+        return w
+    for suf in ("ing", "ed", "es", "s"):
+        if w.endswith(suf) and len(w) - len(suf) >= 3:
+            return w[: -len(suf)]
+    return w
+
+
+def words(s):
+    toks = (w.strip(".-") for w in norm(s).split())
+    return {stem(w) for w in toks if w and w not in STOP}
+
+
 def grade(pred, gold, qtype):
-    """Deterministic grading: every ';'-separated clause of the gold answer must appear."""
+    """Deterministic grading. Abstention: the answer must decline. Numbers must match exactly.
+    Otherwise every ';'- or ','-separated clause of the gold answer must have all of its (stemmed,
+    stopword-free) words present in the answer, so 'confirming data exfiltration; legal was notified'
+    matches 'confirmed data exfiltration; legal notified'."""
     p = norm(pred)
     if qtype == "abstention":
         return any(a in p for a in ABSTAIN)
-    clauses = [norm(c) for c in re.split(r"[;,]", gold) if norm(c)]
     if gold.strip().isdigit():
         return re.search(rf"(?<![\d.]){re.escape(gold.strip())}(?![\d])", p) is not None
-    return all(c in p for c in clauses)
+    have = words(pred)
+    return all(words(c) <= have for c in re.split(r"[;,]", gold) if words(c))
 
 
 class McpTools:
@@ -70,6 +93,9 @@ class McpTools:
 
     async def call(self, name, args):
         res = await self.sessions[name].call_tool(name, args)
+        if getattr(res, "is_error", False) or getattr(res, "isError", False):
+            text = res.content[0].text if res.content else "tool error"
+            return json.dumps({"error": text})
         return json.dumps(parse(res))
 
 
@@ -82,14 +108,16 @@ def log_row(path, row):
 def summarize(paths, out="results/stage4_agents.md"):
     """Aggregate JSONL run logs (one file per agent x variant) into an accuracy/tool-call table."""
     lines = ["# Stage 4: agents through MCP, reranker off vs on\n",
-             "| run | n | accuracy | mean tool calls | mean recall() calls |", "|---|---|---|---|---|"]
+             "| run | n | accuracy | mean tool calls | mean recall() calls | rows with tool errors |",
+             "|---|---|---|---|---|---|"]
     for p in paths:
         rows = [json.loads(l) for l in open(p)]
         if not rows:
             continue
-        acc = sum(r["correct"] for r in rows) / len(rows)
+        acc = sum(grade(r["answer"], r["gold"], r["qtype"]) for r in rows) / len(rows)
         calls = sum(len(r["calls"]) for r in rows) / len(rows)
         rec = sum(sum(c["name"] == "recall" for c in r["calls"]) for r in rows) / len(rows)
-        lines.append(f"| {Path(p).stem} | {len(rows)} | {acc:.3f} | {calls:.2f} | {rec:.2f} |")
+        errs = sum(bool(r.get("tool_errors")) for r in rows)
+        lines.append(f"| {Path(p).stem} | {len(rows)} | {acc:.3f} | {calls:.2f} | {rec:.2f} | {errs} |")
     Path(out).write_text("\n".join(lines) + "\n")
     return "\n".join(lines)

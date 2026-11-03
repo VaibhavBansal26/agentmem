@@ -3,8 +3,10 @@
 Variant A (rerank=False) is the dense top-k baseline. Variant B (rerank=True) is the Stage 2/3
 pipeline: dense+BM25 candidates, cross-encoder score, cue-gated entity-scoped recency, entity chaining.
 """
+import functools
 import json
 import sqlite3
+import threading
 import time
 import uuid
 from datetime import datetime, timezone
@@ -24,6 +26,17 @@ WEIGHTS = {"dense": 1.0, "ce": 2, "scope_llm": 0.0, "bm25": 2, "scope": 4, "enti
 CHAIN = {"w_upd": 0.0, "w_upd_cue": 4, "margin": 4, "hops": 3, "df_max": 40, "seeds": 1}
 
 
+def locked(fn):
+    """Serialize a MemoryService method: the MCP server calls tools from worker threads."""
+
+    @functools.wraps(fn)
+    def wrapper(self, *a, **kw):
+        with self._lock:
+            return fn(self, *a, **kw)
+
+    return wrapper
+
+
 def iso(ts):
     return datetime.fromtimestamp(ts, timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
@@ -39,6 +52,7 @@ class MemoryService:
         self.db.execute("""CREATE TABLE IF NOT EXISTS memories (
             id TEXT PRIMARY KEY, text TEXT, ts REAL, source TEXT, entities TEXT, importance REAL)""")
         self.rerank_on, self.use_ce, self.now = rerank, use_ce, now
+        self._lock = threading.RLock()  # tool calls arrive on worker threads; models are shared
         self._dense = self._bm25 = self._ce = None
         self._load()
 
@@ -53,6 +67,7 @@ class MemoryService:
     def clock(self):
         return self.now if self.now is not None else time.time()
 
+    @locked
     def store(self, text, source="agent_note", entities=(), importance=0.0, timestamp=None, mid=None):
         m = Memory(mid or f"m{uuid.uuid4().hex[:10]}", text,
                    timestamp if timestamp is not None else self.clock(), source, tuple(entities), importance)
@@ -62,6 +77,7 @@ class MemoryService:
         self.memories = sorted([x for x in self.memories if x.id != m.id] + [m], key=lambda x: x.timestamp)
         return m.id
 
+    @locked
     def bulk_load(self, memories):
         self.db.executemany("INSERT OR REPLACE INTO memories VALUES (?,?,?,?,?,?)", [
             (m.id, m.text, m.timestamp, m.source, json.dumps(list(m.entities)), m.importance)
@@ -104,6 +120,7 @@ class MemoryService:
         full = chain.build_full(q, self._dense, self._bm25, {})
         return mems, chain.rank(F, full, WEIGHTS, CHAIN)[:k]
 
+    @locked
     def recall(self, query, k=8, start_date=None, end_date=None, rerank=None):
         mems = self.memories
         if start_date or end_date:
@@ -113,6 +130,7 @@ class MemoryService:
         mems, ids = self._rank(query, mems, k, self.rerank_on if rerank is None else rerank)
         return self._out(mems, ids, k)
 
+    @locked
     def rerank_candidates(self, query, candidates, k=None):
         """Rerank caller-supplied candidates ({text, optional timestamp ISO, optional id})."""
         mems = []

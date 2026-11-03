@@ -47,10 +47,16 @@ async def main():
         from .agent_openai import run
     questions = load_domain("datasets/securitydomain", a.limit)
     path = f"results/agent_runs/{a.agent}_{'reranker' if a.reranker == 'on' else 'baseline'}.jsonl"
+    streak = 0
     async for q, text, calls in run(questions, a.reranker == "on"):
+        errs = sum(bool(c.get("error")) for c in calls)
         log_row(path, {"id": q.id, "qtype": q.qtype, "question": q.text, "answer": text, "gold": q.answer,
-                       "correct": grade(text, q.answer, q.qtype), "calls": calls})
-        print(q.id, q.qtype, "ok" if grade(text, q.answer, q.qtype) else "MISS", len(calls), "calls", flush=True)
+                       "correct": grade(text, q.answer, q.qtype), "calls": calls, "tool_errors": errs})
+        print(q.id, q.qtype, "ok" if grade(text, q.answer, q.qtype) else "MISS", len(calls), "calls",
+              f"TOOL ERRORS: {errs}" if errs else "", flush=True)
+        streak = streak + 1 if errs else 0
+        if streak >= 3:  # a broken tool would otherwise be scored as model mistakes
+            raise SystemExit("Aborting: 3 consecutive questions had tool errors. Fix the server first.")
 
 
 if __name__ == "__main__":

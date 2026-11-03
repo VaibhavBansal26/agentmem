@@ -26,11 +26,17 @@ def build(rerank, model=MODEL):
 
 
 def tool_calls(result):
+    """Tool calls in order, each flagged if its output looks like a tool error (the SDK hands errors
+    to the model as plain text, so they would otherwise pass silently)."""
     out = []
     for item in result.new_items:
-        if getattr(item, "type", "") == "tool_call_item":
+        kind = getattr(item, "type", "")
+        if kind == "tool_call_item":
             raw = item.raw_item
-            out.append({"name": getattr(raw, "name", "?"), "args": getattr(raw, "arguments", "")})
+            out.append({"name": getattr(raw, "name", "?"), "args": getattr(raw, "arguments", ""), "error": False})
+        elif kind == "tool_call_output_item" and out:
+            text = str(getattr(item, "output", ""))[:200].lower()
+            out[-1]["error"] = text.startswith("error") or '"error"' in text[:30]
     return out
 
 

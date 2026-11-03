@@ -1,6 +1,33 @@
 # AgentMem
 
-Long-horizon memory reranker for security-investigation agents. No model training: the reranker is prompting and heuristics only.
+Long-horizon memory for security-investigation agents. No model training anywhere: retrieval (BM25 + dense), a pretrained
+cross-encoder, and entity-aware heuristics decide which records an agent sees. Served over MCP to OpenAI Agents SDK and
+Anthropic SDK agents. Includes an evaluation harness for LongMemEval and LoCoMo, a synthetic security-investigation set,
+CI gates, and a pre-registered online A/B.
+
+## Results at a glance
+
+| | result | where |
+|---|---|---|
+| Online A/B, synthetic investigation set, OpenAI-SDK agent (340 sessions, pre-registered) | accuracy **0.621 to 0.797** with the reranker (+0.176, p = 0.0003; question-clustered 95% CI [+0.065, +0.281]) | `results/stage5_ab.md` |
+| Same set, Anthropic-SDK agent (85 questions) | 0.894 either way; reranker only trims tool calls (3.06 to 2.69) | `results/stage4_agents.md` |
+| Same set, retrieval only (85 questions, held out) | recall@10 0.831 to 0.909, MRR 0.820 to 0.902 | `results/stage3_chain_gated.md` |
+| LongMemEval_s and LoCoMo, retrieval only | **negative result for the heuristics**: BM25 fusion and the cross-encoder carry the gains; time-scope, entity and recency signals add nothing measurable | `results/stage2_ce.md`, `results/baselines.md` |
+
+Read these with the limits in mind: the domain data is synthetic and templated, domain results are in-distribution, each
+agent is one cheap model, and there are no answer-accuracy numbers on the public benchmarks. The Status section below
+lists every caveat, bug and post-hoc decision.
+
+## Architecture
+
+```mermaid
+flowchart LR
+    A[Agent<br/>Anthropic SDK / OpenAI Agents SDK] -- MCP --> M[Memory server<br/>store_memory, recall, rerank]
+    A -- MCP --> L[Alert server<br/>live 2-day window]
+    M --> P[dense + BM25 candidates<br/>cross-encoder score<br/>entity-scoped recency, entity chaining]
+    F[Feature flag<br/>sticky hash, 50/50] -. picks variant .-> M
+    A --> T[(Session log<br/>SQLite)]
+```
 
 ## Problem
 

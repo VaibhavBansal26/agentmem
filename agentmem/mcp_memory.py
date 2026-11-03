@@ -55,5 +55,10 @@ def rerank(query: str, candidates: list[dict]) -> list[dict]:
     return svc().rerank_candidates(query, candidates)
 
 
-if __name__ == "__main__":
+def main():
+    """Console entry point: `agentmem-mcp` (configure with the AGENTMEM_* environment variables)."""
     mcp.run("stdio")
+
+
+if __name__ == "__main__":
+    main()

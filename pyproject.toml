@@ -1,9 +1,23 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "agentmem"
 version = "0.1.0"
+description = "Reranked long-term memory for agents: dense + BM25 candidates, cross-encoder scoring, entity-aware recency and chaining."
+readme = "README.md"
 requires-python = ">=3.10"
 dependencies = ["numpy"]
 
 [project.optional-dependencies]
-dense = ["sentence-transformers"]
-llm = ["anthropic"]
+dense = ["sentence-transformers>=3"]          # real dense retrieval + the cross-encoder reranker
+mcp = ["mcp>=2"]                              # the MCP memory/alert servers
+agents = ["openai-agents>=0.24", "anthropic>=2"]   # agent adapters and the evaluation agents
+all = ["sentence-transformers>=3", "mcp>=2", "openai-agents>=0.24", "anthropic>=2"]
+
+[project.scripts]
+agentmem-mcp = "agentmem.mcp_memory:main"
+
+[tool.setuptools.packages.find]
+include = ["agentmem*"]

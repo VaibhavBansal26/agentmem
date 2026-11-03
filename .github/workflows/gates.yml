@@ -32,7 +32,7 @@ jobs:
           pip install torch --index-url https://download.pytorch.org/whl/cpu
           pip install -r requirements-ci.txt
       - name: Unit tests
-        run: python -m tests.test_smoke && python -m tests.test_stage4 && python -m tests.test_stage5 && python -m tests.test_guardrails
+        run: python -m tests.test_smoke && python -m tests.test_stage4 && python -m tests.test_stage5 && python -m tests.test_guardrails && python -m tests.test_package
       - name: Recall gate
         run: python -m agentmem.gate_recall
 

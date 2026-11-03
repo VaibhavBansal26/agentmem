@@ -1,9 +1,11 @@
 """Baseline retrievers. Interface: retrieve(query, memories, k, now) -> ranked list of Memory."""
 import hashlib
+import inspect
 import math
 import re
 import sqlite3
 import threading
+from pathlib import Path
 from collections import Counter
 
 import numpy as np
@@ -64,22 +66,29 @@ class Dense:
     name = "dense"
     QUERY_PREFIX = "Represent this sentence for searching relevant passages: "
 
-    def __init__(self, model="BAAI/bge-small-en-v1.5", dim=512):
+    def __init__(self, model="BAAI/bge-small-en-v1.5", dim=512, cache_path=None, embed_fn=None):
+        """cache_path: None = <repo cache dir>/embeddings.sqlite, False = no disk cache, else a path.
+        embed_fn: optional callable (texts) or (texts, is_query) returning an (n, d) array; it replaces the model."""
         self.dim = dim
-        try:
-            from sentence_transformers import SentenceTransformer
+        self.embed_fn = embed_fn
+        self._model = None
+        if embed_fn is not None:
+            self.backend = "custom"
+        else:
+            try:
+                from sentence_transformers import SentenceTransformer
 
-            self._model = SentenceTransformer(model)
-            self.backend = f"sentence-transformers:{model}"
-        except ImportError:
-            self._model = None
-            self.backend = "hashing-fallback"
+                self._model = SentenceTransformer(model)
+                self.backend = f"sentence-transformers:{model}"
+            except ImportError:
+                self.backend = "hashing-fallback"
         self._memo = {}
         self._disk = None
         self._lock = threading.RLock()
-        if self._model is not None:
-            CACHE_DIR.mkdir(parents=True, exist_ok=True)
-            self._disk = sqlite3.connect(CACHE_DIR / "embeddings.sqlite", timeout=60, check_same_thread=False)
+        if self._model is not None and cache_path is not False:
+            path = Path(cache_path) if cache_path else CACHE_DIR / "embeddings.sqlite"
+            path.parent.mkdir(parents=True, exist_ok=True)
+            self._disk = sqlite3.connect(path, timeout=60, check_same_thread=False)
             self._lock = threading.RLock()  # the connection and the model are shared across threads
             self._disk.execute("CREATE TABLE IF NOT EXISTS emb (h TEXT PRIMARY KEY, v BLOB)")
             self._model_name = model
@@ -99,7 +108,21 @@ class Dense:
         with self._lock:
             return self._embed(texts, is_query)
 
+    def _call_embed_fn(self, texts, is_query):
+        try:
+            takes_flag = len(inspect.signature(self.embed_fn).parameters) >= 2
+        except (TypeError, ValueError):
+            takes_flag = False
+        vecs = np.asarray(self.embed_fn(texts, is_query) if takes_flag else self.embed_fn(texts), dtype=np.float32)
+        norms = np.linalg.norm(vecs, axis=1, keepdims=True)
+        return vecs / np.where(norms == 0, 1.0, norms)
+
     def _embed(self, texts, is_query=False):
+        if self.embed_fn is not None:
+            missing = [t for t in dict.fromkeys(texts) if (is_query, t) not in self._memo]
+            if missing:
+                self._memo.update({(is_query, t): v for t, v in zip(missing, self._call_embed_fn(missing, is_query))})
+            return np.stack([self._memo[(is_query, t)] for t in texts])
         if self._model is None:
             return np.stack([self._hash_embed(t) for t in texts])
         if is_query:

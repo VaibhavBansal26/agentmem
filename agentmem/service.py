@@ -24,6 +24,20 @@ from .schema import Memory
 WEIGHTS = {"dense": 1.0, "ce": 2, "scope_llm": 0.0, "bm25": 2, "scope": 4, "entity": 0.0,
            "recency": 0.5, "recency_cue": 0.5}
 CHAIN = {"w_upd": 0.0, "w_upd_cue": 4, "margin": 4, "hops": 3, "df_max": 40, "seeds": 1}
+# Without a cross-encoder the cross-encoder weight is meaningless: use the weights tuned without it
+# (results/stage2_ce.md, "Tuned without CE").
+LITE_WEIGHTS = {"dense": 1.0, "ce": 0.0, "scope_llm": 0.0, "bm25": 1, "scope": 2, "entity": 0.0,
+                "recency": 0.0, "recency_cue": 0.0}
+
+
+class FnScorer:
+    """Adapts a callable scorer(pairs: list[(query, text)]) -> list[float] to the .predict() interface."""
+
+    def __init__(self, fn):
+        self.fn = fn
+
+    def predict(self, pairs, batch_size=32, show_progress_bar=False):
+        return np.asarray(self.fn([tuple(p) for p in pairs]), dtype=float)
 
 
 def locked(fn):
@@ -47,13 +61,20 @@ def parse_day(s, end=False):
 
 
 class MemoryService:
-    def __init__(self, db=":memory:", rerank=True, use_ce=True, now=None):
+    def __init__(self, db=":memory:", rerank=True, use_ce=True, now=None, *, dense=None, bm25=None,
+                 scorer=None, weights=None, chain_params=None, cache_path=None, dense_kwargs=None,
+                 ce_model="BAAI/bge-reranker-base"):
         self.db = sqlite3.connect(db, check_same_thread=False)
         self.db.execute("""CREATE TABLE IF NOT EXISTS memories (
             id TEXT PRIMARY KEY, text TEXT, ts REAL, source TEXT, entities TEXT, importance REAL)""")
         self.rerank_on, self.use_ce, self.now = rerank, use_ce, now
         self._lock = threading.RLock()  # tool calls arrive on worker threads; models are shared
-        self._dense = self._bm25 = self._ce = None
+        self._dense, self._bm25 = dense, bm25
+        self._ce = FnScorer(scorer) if scorer is not None else None
+        self._dense_kwargs = dense_kwargs if dense_kwargs is not None else {"cache_path": cache_path}
+        self._ce_model = ce_model
+        self.weights = dict(weights) if weights else dict(WEIGHTS if (use_ce or scorer is not None) else LITE_WEIGHTS)
+        self.chain_params = dict(chain_params) if chain_params else dict(CHAIN)
         self._load()
 
     # --- storage ---------------------------------------------------------------------------
@@ -85,14 +106,31 @@ class MemoryService:
         self.db.commit()
         self._load()
 
+    @locked
+    def delete(self, mid):
+        self.db.execute("DELETE FROM memories WHERE id = ?", (mid,))
+        self.db.commit()
+        n = len(self.memories)
+        self.memories = [m for m in self.memories if m.id != mid]
+        return len(self.memories) < n
+
+    @locked
+    def get(self, mid):
+        return next((m for m in self.memories if m.id == mid), None)
+
     # --- retrieval -------------------------------------------------------------------------
     def _models(self, need_ce):
         if self._dense is None:
-            self._dense, self._bm25 = Dense(), BM25()
+            self._dense = Dense(**self._dense_kwargs)
+        if self._bm25 is None:
+            self._bm25 = BM25()
         if need_ce and self.use_ce and self._ce is None:
-            from sentence_transformers import CrossEncoder
-
-            self._ce = CrossEncoder("BAAI/bge-reranker-base")
+            try:
+                from sentence_transformers import CrossEncoder
+            except ImportError as e:
+                raise ImportError("The cross-encoder needs sentence-transformers: pip install 'agentmem[dense]', "
+                                  "pass your own scorer=..., or construct with use_ce=False.") from e
+            self._ce = CrossEncoder(self._ce_model)
 
     def _view(self, query, mems, ts_now):
         return SimpleNamespace(id="live", text=query, qtype="live", gold_ids=(), memories=mems,
@@ -115,10 +153,10 @@ class MemoryService:
             scores = self._dense.scores(query, mems)
             return mems, [mems[i].id for i in np.argsort(-scores, kind="stable")[:k]]
         F = featurize(q, self._dense, self._bm25)
-        if self.use_ce:
+        if self._ce is not None or self.use_ce:
             F = with_ce_scores(F, {m.id: m.text for m in mems}, self._ce)
         full = chain.build_full(q, self._dense, self._bm25, {})
-        return mems, chain.rank(F, full, WEIGHTS, CHAIN)[:k]
+        return mems, chain.rank(F, full, self.weights, self.chain_params)[:k]
 
     @locked
     def recall(self, query, k=8, start_date=None, end_date=None, rerank=None):

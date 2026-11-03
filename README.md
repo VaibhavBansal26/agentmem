@@ -29,6 +29,45 @@ flowchart LR
     A --> T[(Session log<br/>SQLite)]
 ```
 
+## Use as a library
+
+```python
+from agentmem import Memory
+
+mem = Memory("memories.db")                    # SQLite file, or ":memory:"
+mem.add("Host web-12 role set to production web server", entities=["web-12"])
+for hit in mem.recall("What is the current role of web-12?", k=5):
+    print(hit.rank, hit.time, hit.text)
+```
+
+Install from a checkout (not on PyPI): `pip install .` for the light core, or `pip install ".[dense]"` for the evaluated
+pipeline (bge-small dense retrieval + bge-reranker-base cross-encoder). Extras: `dense`, `mcp` (the MCP servers,
+console script `agentmem-mcp`), `agents` (OpenAI Agents SDK and Anthropic SDK), `all`.
+
+- **Light core:** only NumPy is required. `import agentmem` loads no model libraries. Without the `dense` extra it falls
+  back to a lexical hashing embedding and no cross-encoder, and warns that quality is lower.
+- **Bring your own models:** `Memory(embedder=fn, scorer=fn)`. `embedder(texts) -> (n, d)` array replaces the dense
+  model; `scorer([(query, text), ...]) -> list[float]` replaces the cross-encoder. The scorer is one signal in a weighted
+  blend with dense and BM25 scores, not an override.
+- **Config:** `Config(weights=..., chain=..., dense_model=..., reranker_model=...)`. Defaults are the values evaluated in
+  this repo (tuned on LongMemEval_s and a sibling synthetic set); re-tune on your own questions.
+- **Agents:** `agentmem.adapters.anthropic_tools(mem)` returns `(tool_definitions, handle)`;
+  `openai_agents_tools(mem)` returns Agents SDK function tools. Both expose `memory_recall` and `memory_store`.
+- **Time:** `Memory(now=...)` fixes the clock to replay a historical store; memories newer than the clock are not
+  recalled. `recall(start=..., end=...)` filters by date (date-granular, UTC).
+- **No surprise files:** nothing is written to your working directory. A file-backed store keeps its embedding cache
+  next to the database (`<path>.emb.sqlite`).
+
+Known limits of the package as it stands:
+- **Scale.** BM25 statistics are recomputed over the store on every query, so recall time grows linearly with the number
+  of memories. It was only measured at about 3,000 memories (median 212 ms per recall with the cross-encoder, 14 ms
+  without, on a laptop CPU). Do not expect it to hold up at 100,000 memories without an incremental index.
+- **Evidence.** The gains reported here come from one synthetic investigation set plus a benchmark result where the
+  cross-encoder and BM25 fusion did the work. Treat the defaults as a starting point.
+- **Packaging.** The wheel also contains the research and evaluation modules (`bench`, `spike`, `domain`, ...). The stable
+  API is only what `agentmem` exports (`Memory`, `Hit`, `Config`) plus `agentmem.adapters`; everything else may change.
+  There is no LICENSE file yet, so others cannot legally reuse the code until one is chosen.
+
 ## Problem
 
 As an agent's history grows over days and weeks, recency or embedding-similarity retrieval surfaces the wrong memories. The reranker's job is to pick the memories that change the agent's next decision.
@@ -68,7 +107,7 @@ Every API dollar goes in `COSTS.md`. All model calls are cached on disk under `.
 ## Usage
 
 ```bash
-make test                                   # smoke + Stage 4 tests
+make test                                   # all test modules
 make bench DATASET=toy RETRIEVER=bm25
 make bench DATASET=longmemeval DATA=path/to/longmemeval_s.json RETRIEVER=dense
 make bench DATASET=locomo DATA=path/to/locomo10.json RETRIEVER=bm25

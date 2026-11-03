@@ -66,14 +66,17 @@ def _day(value):
 class Memory:
     """A persistent, thread-safe memory with reranked recall.
 
-    path: SQLite file, or ":memory:". embedder: optional callable(texts) or (texts, is_query) -> (n, d) array,
+    path: SQLite file, or ":memory:". embedder: optional callable(texts) -> (n, d) array (add an `is_query=False`
+    parameter if queries and passages embed differently),
     replaces the dense model. scorer: optional callable(list of (query, text)) -> list of floats, replaces the
     cross-encoder (higher = more relevant); it is one signal in a weighted blend with dense and BM25 scores,
-    not an override. rerank=False gives plain dense top-k. now: fix the clock (epoch)
+    not an override. rerank=False gives plain dense top-k. cross_encoder=False skips the cross-encoder
+    (much faster, lower quality) even when sentence-transformers is installed. now: fix the clock (epoch)
     to replay a historical store; by default memories newer than the current time are not recalled.
     """
 
-    def __init__(self, path=":memory:", *, embedder=None, scorer=None, rerank=True, config=None, now=None):
+    def __init__(self, path=":memory:", *, embedder=None, scorer=None, rerank=True, cross_encoder=True,
+                 config=None, now=None):
         cfg = config or Config()
         have_st = importlib.util.find_spec("sentence_transformers") is not None
         if embedder is None and not have_st:
@@ -82,7 +85,7 @@ class Memory:
                           "pip install 'agentmem[dense]' for the evaluated pipeline.", stacklevel=2)
         cache = False if path == ":memory:" else f"{path}.emb.sqlite"  # never write into the caller's cwd
         self._svc = MemoryService(
-            path, rerank=rerank, use_ce=scorer is None and have_st, now=_ts(now), scorer=scorer,
+            path, rerank=rerank, use_ce=cross_encoder and scorer is None and have_st, now=_ts(now), scorer=scorer,
             weights=cfg.weights, chain_params=cfg.chain, ce_model=cfg.reranker_model,
             dense_kwargs={"model": cfg.dense_model, "cache_path": cache, "embed_fn": embedder})
 

@@ -69,8 +69,10 @@ def query_entities(query):
 
 
 def featurize(q, dense, bm25, n_dense=50, n_bm25=20):
-    pool = [i for i, m in enumerate(q.memories) if m.timestamp <= q.asked_at]
-    mems = [q.memories[i] for i in pool]
+    if getattr(q, "all_visible", False):  # whole store visible: keep the list object so indexed scorers can recognise it
+        mems = q.memories
+    else:
+        mems = [m for m in q.memories if m.timestamp <= q.asked_at]
     d = np.asarray(dense.scores(q.text, mems))
     b = np.asarray(bm25.scores(q.text, mems))
     cand = sorted(set(np.argsort(-d)[:n_dense]) | set(np.argsort(-b)[:n_bm25]))

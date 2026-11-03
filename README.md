@@ -62,9 +62,18 @@ console script `agentmem-mcp`), `agents` (OpenAI Agents SDK and Anthropic SDK), 
   next to the database (`<path>.emb.sqlite`).
 
 Known limits of the package as it stands:
-- **Scale.** BM25 statistics are recomputed over the store on every query, so recall time grows linearly with the number
-  of memories. It was only measured at about 3,000 memories (median 212 ms per recall with the cross-encoder, 14 ms
-  without, on a laptop CPU). Do not expect it to hold up at 100,000 memories without an incremental index.
+- **Scale.** Recall uses an incremental index (cached tokens, BM25 postings, an embedding matrix, identifier
+  postings), updated in place when a memory is added in time order and rebuilt on a backdated insert or a delete.
+  It is a pure speed-up: BM25 scores match the original implementation and rankings are identical on the domain set
+  with and without it (`tests/test_index.py`). Measured with `examples/scale_bench.py` (synthetic records, a cheap
+  NumPy embedder, **no cross-encoder**, laptop CPU): median recall 0 ms at 1,000 memories, 1 ms at 10,000, 2 ms at
+  30,000 and 8 ms at 100,000, against 482 ms at 30,000 before the index. Costs that remain: the cross-encoder adds
+  a roughly constant 130 to 200 ms per query (it scores about 40 candidates whatever the store size); the first recall
+  after opening a store embeds every memory (bge-small encoded about 1,470 short records per second on an Apple-GPU
+  laptop, so about 1 minute for 100,000; longer texts and CPU-only machines will be slower, and I did not measure them;
+  a file-backed store caches embeddings next to the database); opening a store rebuilds the index in O(N) (about 2 s at
+  100,000); the index and embedding matrix live in RAM (about 150 MB of vectors at 100,000 memories with a 384-dim
+  model); and a backdated insert rebuilds the whole index, so bulk-load history with `add_many`.
 - **Evidence.** The gains reported here come from one synthetic investigation set plus a benchmark result where the
   cross-encoder and BM25 fusion did the work. Treat the defaults as a starting point.
 - **Packaging.** The wheel also contains the research and evaluation modules (`bench`, `spike`, `domain`, ...). The stable

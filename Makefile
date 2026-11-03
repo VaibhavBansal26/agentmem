@@ -15,6 +15,7 @@ test:
 	$(PYTHON) -m tests.test_stage5
 	$(PYTHON) -m tests.test_guardrails
 	$(PYTHON) -m tests.test_package
+	$(PYTHON) -m tests.test_index
 
 gate:
 	$(PYTHON) -m agentmem.gate_recall

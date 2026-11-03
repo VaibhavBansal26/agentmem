@@ -16,6 +16,7 @@ import numpy as np
 
 from . import chain
 from .rerank import featurize, with_ce_scores
+from .index import IndexedBM25, IndexedDense, StoreIndex
 from .retrievers import BM25, Dense
 from .schema import Memory
 
@@ -60,16 +61,27 @@ def parse_day(s, end=False):
     return d + 86399 if end else d
 
 
+class _Texts:
+    """id -> text lookup over the indexed store without building a dict of every memory per query."""
+
+    def __init__(self, mems, row):
+        self.mems, self.row = mems, row
+
+    def __getitem__(self, mid):
+        return self.mems[self.row[mid]].text
+
+
 class MemoryService:
     def __init__(self, db=":memory:", rerank=True, use_ce=True, now=None, *, dense=None, bm25=None,
                  scorer=None, weights=None, chain_params=None, cache_path=None, dense_kwargs=None,
-                 ce_model="BAAI/bge-reranker-base"):
+                 ce_model="BAAI/bge-reranker-base", use_index=True):
         self.db = sqlite3.connect(db, check_same_thread=False)
         self.db.execute("""CREATE TABLE IF NOT EXISTS memories (
             id TEXT PRIMARY KEY, text TEXT, ts REAL, source TEXT, entities TEXT, importance REAL)""")
         self.rerank_on, self.use_ce, self.now = rerank, use_ce, now
         self._lock = threading.RLock()  # tool calls arrive on worker threads; models are shared
         self._dense, self._bm25 = dense, bm25
+        self.use_index, self.index = use_index, StoreIndex()
         self._ce = FnScorer(scorer) if scorer is not None else None
         self._dense_kwargs = dense_kwargs if dense_kwargs is not None else {"cache_path": cache_path}
         self._ce_model = ce_model
@@ -79,11 +91,13 @@ class MemoryService:
 
     # --- storage ---------------------------------------------------------------------------
     def _load(self):
-        self.memories = [
-            Memory(i, t, ts, s, tuple(json.loads(e)), imp)
-            for i, t, ts, s, e, imp in self.db.execute(
-                "SELECT id, text, ts, source, entities, importance FROM memories ORDER BY ts")
-        ]
+        rows = self.db.execute("SELECT id, text, ts, source, entities, importance FROM memories ORDER BY ts")
+        self._reset([Memory(i, t, ts, s, tuple(json.loads(e)), imp) for i, t, ts, s, e, imp in rows])
+
+    def _reset(self, memories):
+        """Rebuild the derived index from a time-ordered list (O(N); done on open, bulk load, delete, backdated add)."""
+        self.index.rebuild(memories)
+        self.memories = self.index.memories
 
     def clock(self):
         return self.now if self.now is not None else time.time()
@@ -95,7 +109,10 @@ class MemoryService:
         self.db.execute("INSERT OR REPLACE INTO memories VALUES (?,?,?,?,?,?)",
                         (m.id, m.text, m.timestamp, m.source, json.dumps(list(m.entities)), m.importance))
         self.db.commit()
-        self.memories = sorted([x for x in self.memories if x.id != m.id] + [m], key=lambda x: x.timestamp)
+        if m.id not in self.index.row and m.timestamp >= self.index.max_ts:
+            self.index.append(m)  # in time order: update the index in place
+        else:  # backdated or replacing an existing id: rebuild
+            self._reset(sorted([x for x in self.index.memories if x.id != m.id] + [m], key=lambda x: x.timestamp))
         return m.id
 
     @locked
@@ -110,13 +127,15 @@ class MemoryService:
     def delete(self, mid):
         self.db.execute("DELETE FROM memories WHERE id = ?", (mid,))
         self.db.commit()
-        n = len(self.memories)
-        self.memories = [m for m in self.memories if m.id != mid]
-        return len(self.memories) < n
+        if mid not in self.index.row:
+            return False
+        self._reset([m for m in self.index.memories if m.id != mid])
+        return True
 
     @locked
     def get(self, mid):
-        return next((m for m in self.memories if m.id == mid), None)
+        r = self.index.row.get(mid)
+        return self.index.memories[r] if r is not None else None
 
     # --- retrieval -------------------------------------------------------------------------
     def _models(self, need_ce):
@@ -124,6 +143,8 @@ class MemoryService:
             self._dense = Dense(**self._dense_kwargs)
         if self._bm25 is None:
             self._bm25 = BM25()
+        if self.use_index and not isinstance(self._dense, IndexedDense):
+            self._dense, self._bm25 = IndexedDense(self.index, self._dense), IndexedBM25(self.index, self._bm25)
         if need_ce and self.use_ce and self._ce is None:
             try:
                 from sentence_transformers import CrossEncoder
@@ -132,29 +153,39 @@ class MemoryService:
                                   "pass your own scorer=..., or construct with use_ce=False.") from e
             self._ce = CrossEncoder(self._ce_model)
 
-    def _view(self, query, mems, ts_now):
-        return SimpleNamespace(id="live", text=query, qtype="live", gold_ids=(), memories=mems,
-                               asked_at=ts_now)
+    def _view(self, query, mems, ts_now, fast=False):
+        view = SimpleNamespace(id="live", text=query, qtype="live", gold_ids=(), memories=mems, asked_at=ts_now)
+        if fast:  # the whole indexed store is visible: hand over the precomputed structures
+            ix = self.index
+            view.all_visible, view.ids, view.tokens = True, ix.ids, ix.id_tokens
+            view.df, view.row, view.id_post = ix.id_df, ix.row, ix.id_post
+        return view
 
     def _out(self, mems, ranked_ids, k):
-        by_id = {m.id: m for m in mems}
+        if mems is self.index.memories:
+            by_id = {i: mems[self.index.row[i]] for i in ranked_ids[:k]}
+        else:
+            by_id = {m.id: m for m in mems}
         return [{"rank": r + 1, "id": i, "text": by_id[i].text, "timestamp": iso(by_id[i].timestamp),
                  "source": by_id[i].source} for r, i in enumerate(ranked_ids[:k])]
 
     def _rank(self, query, mems, k, rerank):
         """Rank `mems` for `query` as of the service clock; returns a list of ids."""
         ts_now = self.clock()
-        mems = [m for m in mems if m.timestamp <= ts_now]
+        fast = self.use_index and mems is self.index.memories and self.index.max_ts <= ts_now
+        if not fast:
+            mems = [m for m in mems if m.timestamp <= ts_now]
         if not mems:
             return mems, []
         self._models(rerank)
-        q = self._view(query, mems, ts_now)
+        q = self._view(query, mems, ts_now, fast)
         if not rerank:
             scores = self._dense.scores(query, mems)
             return mems, [mems[i].id for i in np.argsort(-scores, kind="stable")[:k]]
         F = featurize(q, self._dense, self._bm25)
         if self._ce is not None or self.use_ce:
-            F = with_ce_scores(F, {m.id: m.text for m in mems}, self._ce)
+            texts = _Texts(mems, self.index.row) if fast else {m.id: m.text for m in mems}
+            F = with_ce_scores(F, texts, self._ce)
         full = chain.build_full(q, self._dense, self._bm25, {})
         return mems, chain.rank(F, full, self.weights, self.chain_params)[:k]
 

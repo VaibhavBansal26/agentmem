@@ -18,17 +18,27 @@ DEFAULT = {"w_upd": 0.0, "w_upd_cue": 0.0, "margin": 2.0, "hops": 0, "df_max": 4
 
 def build_full(q, dense, bm25, tok_cache):
     """Per-question arrays over the whole haystack (dense/BM25 scores and identifier tokens)."""
-    mems = [m for m in q.memories if m.timestamp <= q.asked_at]
-    if len(mems) == len(q.memories):
-        tok = tok_cache.setdefault(id(q.memories), [id_tokens(m.text) for m in mems])
+    if getattr(q, "all_visible", False):
+        mems = q.memories
+        tok = getattr(q, "tokens", None)
+        if tok is None:
+            tok = tok_cache.setdefault(id(q.memories), [id_tokens(m.text) for m in mems])
     else:
-        tok = [id_tokens(m.text) for m in mems]
-    return {
-        "ids": [m.id for m in mems],
+        mems = [m for m in q.memories if m.timestamp <= q.asked_at]
+        if len(mems) == len(q.memories):
+            tok = tok_cache.setdefault(id(q.memories), [id_tokens(m.text) for m in mems])
+        else:
+            tok = [id_tokens(m.text) for m in mems]
+    out = {
+        "ids": getattr(q, "ids", None) or [m.id for m in mems],
         "dense": np.asarray(dense.scores(q.text, mems), dtype=np.float32),
         "bm25": np.asarray(bm25.scores(q.text, mems), dtype=np.float32),
         "tok": tok,
     }
+    for extra in ("df", "row", "id_post"):  # provided by StoreIndex; derived on the fly otherwise
+        if getattr(q, extra, None) is not None:
+            out[extra] = getattr(q, extra)
+    return out
 
 
 _DF = {}
@@ -51,7 +61,7 @@ def update_bonus(F, FULL, base, p):
     qent = query_entities(F["query"])
     if not qent:
         return base
-    idx = {m: i for i, m in enumerate(FULL["ids"])}
+    idx = FULL.get("row") or {m: i for i, m in enumerate(FULL["ids"])}
     ent = np.array([len(qent & FULL["tok"][idx[m]]) / len(qent) for m in F["ids"]])
     top = ent.max()
     if top <= 0:
@@ -69,15 +79,20 @@ def chain_rank(F, FULL, ranked_ids, p):
     if not p["hops"]:
         return ranked_ids
     seeds = ranked_ids[: p["seeds"]]
-    idx = {m: i for i, m in enumerate(FULL["ids"])}
-    df, qent = _df(FULL["tok"]), query_entities(F["query"])
+    idx = FULL.get("row") or {m: i for i, m in enumerate(FULL["ids"])}
+    df, qent = FULL.get("df") or _df(FULL["tok"]), query_entities(F["query"])
     bridge = set()
     for s in seeds:
         bridge |= {t for t in FULL["tok"][idx[s]]
                    if any(c.isdigit() for c in t) and t not in qent and 2 <= df[t] <= p["df_max"]}
     if not bridge:
         return ranked_ids
-    cand = [i for i, tok in enumerate(FULL["tok"]) if tok & bridge and FULL["ids"][i] not in seeds]
+    seed_set = set(seeds)
+    if FULL.get("id_post") is not None:  # df is bounded by df_max, so the postings are short
+        rows = sorted({r for t in bridge for r in FULL["id_post"].get(t, ())})
+        cand = [i for i in rows if FULL["ids"][i] not in seed_set]
+    else:
+        cand = [i for i, tok in enumerate(FULL["tok"]) if tok & bridge and FULL["ids"][i] not in seeds]
     if not cand:
         return ranked_ids
     rel = (_z(FULL["dense"]) + _z(FULL["bm25"]))[cand]

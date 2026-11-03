@@ -68,7 +68,8 @@ class Dense:
 
     def __init__(self, model="BAAI/bge-small-en-v1.5", dim=512, cache_path=None, embed_fn=None):
         """cache_path: None = <repo cache dir>/embeddings.sqlite, False = no disk cache, else a path.
-        embed_fn: optional callable (texts) or (texts, is_query) returning an (n, d) array; it replaces the model."""
+        embed_fn: optional callable(texts) -> (n, d) array; it replaces the model. If it declares an `is_query`
+        parameter it is called as embed_fn(texts, is_query=...), so query and passage embeddings can differ."""
         self.dim = dim
         self.embed_fn = embed_fn
         self._model = None
@@ -109,11 +110,14 @@ class Dense:
             return self._embed(texts, is_query)
 
     def _call_embed_fn(self, texts, is_query):
+        """Pass is_query only to an embedder that declares a parameter with that name (or takes **kwargs)."""
         try:
-            takes_flag = len(inspect.signature(self.embed_fn).parameters) >= 2
+            params = inspect.signature(self.embed_fn).parameters
+            wants_flag = "is_query" in params or any(p.kind is inspect.Parameter.VAR_KEYWORD for p in params.values())
         except (TypeError, ValueError):
-            takes_flag = False
-        vecs = np.asarray(self.embed_fn(texts, is_query) if takes_flag else self.embed_fn(texts), dtype=np.float32)
+            wants_flag = False
+        vecs = np.asarray(self.embed_fn(texts, is_query=is_query) if wants_flag else self.embed_fn(texts),
+                          dtype=np.float32)
         norms = np.linalg.norm(vecs, axis=1, keepdims=True)
         return vecs / np.where(norms == 0, 1.0, norms)
 

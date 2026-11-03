@@ -55,6 +55,26 @@ def test_scorer_decides_between_equally_relevant_candidates():
     assert top("beta").endswith("beta") and top("alpha").endswith("alpha")
 
 
+def test_embedder_signatures_are_not_misread():
+    """An optional second parameter (e.g. dim) must not be mistaken for the is_query flag."""
+    dims, flags = [], []
+
+    def with_dim(texts, dim=64):  # an optional extra that is NOT is_query: must always keep its default
+        dims.append(dim)
+        return bow(texts)[:, :dim]
+
+    def with_flag(texts, is_query=False):
+        flags.append(is_query)
+        return bow(texts)
+
+    for fn in (with_dim, with_flag):
+        mem = Memory(embedder=fn, scorer=overlap)
+        mem.add("host db-1 patched", timestamp="2026-10-01")
+        assert mem.recall("db-1 patched", k=1)[0].text == "host db-1 patched"
+    assert dims and set(dims) == {64}  # never overwritten by a boolean
+    assert set(flags) == {True, False}  # passages embedded with False, the query with True
+
+
 def test_persistence_delete_and_window():
     with tempfile.TemporaryDirectory() as d:
         path = os.path.join(d, "m.db")
@@ -154,6 +174,7 @@ def test_openai_agents_adapter_invokes_tools():
 if __name__ == "__main__":
     test_update_handling_and_ranking_with_plugins()
     test_scorer_decides_between_equally_relevant_candidates()
+    test_embedder_signatures_are_not_misread()
     test_persistence_delete_and_window()
     test_clock_hides_future_memories_and_no_cache_dir_is_created()
     test_add_many_and_timestamp_types()

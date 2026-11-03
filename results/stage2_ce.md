@@ -2,9 +2,9 @@
 
 Pool per question: fused (dense+BM25) top-30 plus dense and BM25 top-10 (same pool for every row). Weights fit on even-indexed LongMemEval_s only; dev = odd-indexed; LoCoMo scored once with frozen weights.
 
-Tuned without CE: `{'dense': 1.0, 'ce': 0.0, 'bm25': 1, 'scope': 2, 'entity': 0.0, 'recency': 0.0, 'recency_cue': 0.0}`
+Tuned without CE: `{'dense': 1.0, 'ce': 0.0, 'scope_llm': 0.0, 'bm25': 1, 'scope': 2, 'entity': 0.0, 'recency': 0.0, 'recency_cue': 0.0}`
 
-Tuned with CE: `{'dense': 1.0, 'ce': 2, 'bm25': 2, 'scope': 4, 'entity': 0.0, 'recency': 0.5, 'recency_cue': 0.5}` (fit objective 0.796)
+Tuned with CE: `{'dense': 1.0, 'ce': 2, 'scope_llm': 0.0, 'bm25': 2, 'scope': 4, 'entity': 0.0, 'recency': 0.5, 'recency_cue': 0.5}` (fit objective 0.796)
 
 
 ## LongMemEval_s dev half

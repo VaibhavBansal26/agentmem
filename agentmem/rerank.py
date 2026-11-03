@@ -93,7 +93,7 @@ def _time_rank(ts):
     return order / max(len(ts) - 1, 1)
 
 
-WEIGHTS = {"dense": 1.0, "ce": 0.0, "bm25": 0.0, "scope": 0.0, "entity": 0.0, "recency": 0.0, "recency_cue": 0.0}
+WEIGHTS = {"dense": 1.0, "ce": 0.0, "scope_llm": 0.0, "bm25": 0.0, "scope": 0.0, "entity": 0.0, "recency": 0.0, "recency_cue": 0.0}
 
 
 def score(F, w):
@@ -101,6 +101,8 @@ def score(F, w):
     if w["ce"] and "ce" in F:
         s = s + w["ce"] * _z(F["ce"])
     s = s + w["scope"] * F["in_scope"] + w["entity"] * F["entity"]
+    if w["scope_llm"] and "in_scope_llm" in F:
+        s = s + w["scope_llm"] * F["in_scope_llm"]
     tr = _time_rank(F["ts"])
     s = s + w["recency"] * tr + (w["recency_cue"] * tr if F["cue"] else 0.0)
     return s

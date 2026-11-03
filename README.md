@@ -66,7 +66,10 @@ Known limits of the package as it stands:
   cross-encoder and BM25 fusion did the work. Treat the defaults as a starting point.
 - **Packaging.** The wheel also contains the research and evaluation modules (`bench`, `spike`, `domain`, ...). The stable
   API is only what `agentmem` exports (`Memory`, `Hit`, `Config`) plus `agentmem.adapters`; everything else may change.
-  There is no LICENSE file yet, so others cannot legally reuse the code until one is chosen.
+
+## License
+
+MIT, see `LICENSE`.
 
 ## Problem
 

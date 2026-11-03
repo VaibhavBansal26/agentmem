@@ -7,3 +7,6 @@ results/_*.log
 results/_old/
 results/_stage
 .env
+results/agent_runs/_invalid/
+results/agent_runs/_smoke/
+results/_*.log
